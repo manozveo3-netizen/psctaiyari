@@ -1,0 +1,43 @@
+import {build} from 'esbuild';
+import {unlink} from 'node:fs/promises';
+import React from 'react';
+import TestRenderer,{act} from 'react-test-renderer';
+import assert from 'node:assert/strict';
+const out=new URL('./result-bundle.mjs',import.meta.url).pathname;
+const requests=[];
+globalThis.resultTestId='a';
+globalThis.resultTestFetch=id=>new Promise((resolve,reject)=>requests.push({id,resolve,reject}));
+await build({entryPoints:['src/pages/Result.jsx'],bundle:true,platform:'node',format:'esm',outfile:out,jsx:'automatic',packages:'external',plugins:[{name:'result-mocks',setup(b){
+ b.onResolve({filter:/lib\/supabase/},()=>({path:'db',namespace:'mock'}));
+ b.onResolve({filter:/^react-router-dom$/},()=>({path:'router',namespace:'mock'}));
+ b.onLoad({filter:/.*/,namespace:'mock'},args=>({loader:'js',resolveDir:process.cwd(),contents:args.path==='db'?`export const supabase={from:()=>({select:()=>({eq:(_column,id)=>({maybeSingle:()=>globalThis.resultTestFetch(id)})})})};`:`import React from 'react';export const useParams=()=>({id:globalThis.resultTestId});export const Link=({to,children,...props})=>React.createElement('a',{href:to,...props},children);`}));
+}}]});
+let view;
+try{
+ const {default:Result}=await import(out);
+ await act(async()=>{view=TestRenderer.create(React.createElement(Result));});
+ const text=()=>JSON.stringify(view.toJSON());
+ assert.match(text(),/Loading result/);
+ await act(async()=>requests.shift().resolve({data:null,error:{message:'Network unavailable'}}));
+ assert.match(text(),/Network unavailable/);assert.match(text(),/Retry/);
+ await act(async()=>view.root.findByType('button').props.onClick());
+ assert.match(text(),/Loading result/);
+ const completed={status:'completed',test_id:'test-a',tests:{title:'Frozen test'},percentage:100,correct_answers:1,wrong_answers:0,skipped_answers:0,total_questions:1};
+ await act(async()=>requests.shift().resolve({data:completed,error:null}));
+ assert.match(text(),/100/);assert.match(text(),/Frozen test/);
+ globalThis.resultTestId='b';await act(async()=>view.update(React.createElement(Result)));
+ const stale=requests.shift();
+ globalThis.resultTestId='c';await act(async()=>view.update(React.createElement(Result)));
+ await act(async()=>requests.shift().resolve({data:null,error:null}));
+ assert.match(text(),/Result not found or you do not have access/);
+ await act(async()=>stale.resolve({data:completed,error:null}));
+ assert.doesNotMatch(text(),/Frozen test/);
+ await act(async()=>view.root.findByType('button').props.onClick());
+ await act(async()=>requests.shift().resolve({data:{...completed,status:'in_progress'},error:null}));
+ assert.match(text(),/not been submitted/);assert.doesNotMatch(text(),/bigscore/);
+ globalThis.resultTestId='d';await act(async()=>view.update(React.createElement(Result)));
+ await act(async()=>requests.shift().reject(new Error('Connection failed')));
+ assert.match(text(),/Connection failed/);
+ await act(async()=>view.unmount());
+ console.log('PASS: result loading, query errors, missing/forbidden, retry, completed/in-progress, rejected requests and stale response checks');
+}finally{await unlink(out);delete globalThis.resultTestId;delete globalThis.resultTestFetch;}
