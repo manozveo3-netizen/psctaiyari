@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import {validateConfiguration as check} from '../src/lib/config.js';
+const url='https://example.supabase.co';
+assert.match(check(null,null),/Missing/);
+assert.match(check('invalid','sb_publishable_test'),/URL/);
+assert.match(check(url,'PASTE_YOUR_KEY'),/placeholder/);
+assert.match(check(url,'sb_secret_test'),/secret/);
+const jwt=role=>'e30.'+Buffer.from(JSON.stringify({role})).toString('base64url')+'.signature';
+assert.match(check(url,jwt('service_role')),/never/);
+assert.equal(check(url,jwt('anon')),'');
+assert.equal(check(url,'sb_publishable_test'),'');
+console.log('PASS: 7 frontend configuration checks');

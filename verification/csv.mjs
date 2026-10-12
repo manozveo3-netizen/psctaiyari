@@ -7,7 +7,7 @@ const levels=[{id:'level',code:'ADHIKRIT'}],subjects=['GK','SCIENCE','ICT'].map(
 assert.equal(validateQuestions(raw,levels,subjects,[]).length,5);
 assert.throws(()=>validateQuestions([{...raw[0],correct_option:'F'}],levels,subjects,[]));
 assert.throws(()=>validateQuestions([{...raw[0],marks:'abc'}],levels,subjects,[]));
-assert.throws(()=>validateQuestions([raw[0],raw[0]],levels,subjects,[]));
+assert.equal(validateQuestions([raw[0],raw[0]],levels,subjects,[]).length,1);
 assert.throws(()=>validateQuestions([{...raw[0],subject_code:'MISSING'}],levels,subjects,[]));
 assert.throws(()=>validateUsers([{email:'bad',full_name:'Name',password:'long-password'}]));
 assert.throws(()=>validateUsers([{email:'a@example.com',full_name:'Name',password:'short'}]));

@@ -1,6 +1,6 @@
 create or replace function public.import_question_set(p_rows jsonb,p_test jsonb default null)
 returns jsonb language plpgsql security invoker set search_path='' as $$
-declare r jsonb; qid uuid; tid uuid; first_level uuid; pos integer:=0; total numeric:=0; k integer; opts jsonb; mk numeric;
+declare r jsonb; qid uuid; tid uuid; first_level uuid; pos integer:=0; total numeric:=0; skipped integer:=0; k integer; opts jsonb; mk numeric;
 begin
  if auth.uid() is null or not private.is_staff() then raise exception 'Staff access required'; end if;
  if jsonb_typeof(p_rows) <> 'array' or jsonb_array_length(p_rows) not between 1 and 500 then raise exception 'Import 1 to 500 questions'; end if;
@@ -21,7 +21,7 @@ begin
   if tid is not null and (r->>'exam_level_id')::uuid<>first_level then raise exception 'A test set must use one exam level';end if;
   if r->>'topic_id' is not null and not exists(select 1 from public.topics where id=(r->>'topic_id')::uuid and subject_id=(r->>'subject_id')::uuid and active) then raise exception 'Invalid topic at row %',pos;end if;
   perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended((r->>'exam_level_id')||(r->>'subject_id')||lower(trim(r->>'question_text')),0));
-  if exists(select 1 from public.questions where exam_level_id=(r->>'exam_level_id')::uuid and subject_id=(r->>'subject_id')::uuid and lower(trim(question_text))=lower(trim(r->>'question_text'))) then raise exception 'Duplicate existing question at row %',pos;end if;
+  if exists(select 1 from public.questions where exam_level_id=(r->>'exam_level_id')::uuid and subject_id=(r->>'subject_id')::uuid and lower(trim(question_text))=lower(trim(r->>'question_text'))) then skipped:=skipped+1;pos:=pos-1;continue;end if;
   insert into public.questions(exam_level_id,subject_id,topic_id,question_text,difficulty,explanation,source_name,source_url,verification_status,is_human_verified,created_by,verified_by)
   values((r->>'exam_level_id')::uuid,(r->>'subject_id')::uuid,(r->>'topic_id')::uuid,trim(r->>'question_text'),(r->>'difficulty')::public.difficulty_level,r->>'explanation',r->>'source_name',r->>'source_url','verified',true,auth.uid(),auth.uid()) returning id into qid;
   for k in 0..3 loop
@@ -31,8 +31,11 @@ begin
   if tid is not null then insert into public.test_questions(test_id,question_id,position,marks) values(tid,qid,pos,mk);end if;
   total:=total+mk;
  end loop;
- if tid is not null then update public.tests set total_questions=pos,total_marks=total where id=tid;end if;
- return jsonb_build_object('count',pos,'test_id',tid);
+ if tid is not null then
+  if pos=0 then delete from public.tests where id=tid;tid:=null;
+  else update public.tests set total_questions=pos,total_marks=total where id=tid;end if;
+ end if;
+ return jsonb_build_object('count',pos,'skipped',skipped,'test_id',tid);
 end $$;
 revoke all on function public.import_question_set(jsonb,jsonb) from public,anon;
 grant execute on function public.import_question_set(jsonb,jsonb) to authenticated;
