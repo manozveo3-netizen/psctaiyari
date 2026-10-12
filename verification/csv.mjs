@@ -1,0 +1,14 @@
+import assert from 'node:assert/strict';import {parseCSV,validateQuestions,validateUsers} from '../src/lib/csv.js';import fs from 'node:fs';
+assert.equal(parseCSV('\uFEFFname,text\r\n"नेपाली","a,b"\r\n')[0].text,'a,b');
+assert.equal(parseCSV('name,text\nX,"line 1\nline 2 with ""quote"""')[0].text,'line 1\nline 2 with "quote"');
+assert.throws(()=>parseCSV('x,x\na,b'));assert.throws(()=>parseCSV('x,y\na'));assert.throws(()=>parseCSV('x\n"open'));
+const raw=parseCSV(fs.readFileSync('public/templates/demo-questions.csv','utf8'));
+const levels=[{id:'level',code:'ADHIKRIT'}],subjects=['GK','SCIENCE','ICT'].map(code=>({code,id:code}));
+assert.equal(validateQuestions(raw,levels,subjects,[]).length,5);
+assert.throws(()=>validateQuestions([{...raw[0],correct_option:'F'}],levels,subjects,[]));
+assert.throws(()=>validateQuestions([{...raw[0],marks:'abc'}],levels,subjects,[]));
+assert.throws(()=>validateQuestions([raw[0],raw[0]],levels,subjects,[]));
+assert.throws(()=>validateQuestions([{...raw[0],subject_code:'MISSING'}],levels,subjects,[]));
+assert.throws(()=>validateUsers([{email:'bad',full_name:'Name',password:'long-password'}]));
+assert.throws(()=>validateUsers([{email:'a@example.com',full_name:'Name',password:'short'}]));
+console.log('PASS: 12 CSV parsing and validation checks');

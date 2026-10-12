@@ -1,0 +1,6 @@
+﻿exam_level_code,subject_code,topic_id,question_text,option_a,option_b,option_c,option_d,correct_option,difficulty,explanation,source_name,source_url,marks
+ADHIKRIT,GK,,नेपालको राजधानी कुन हो?,काठमाडौं,पोखरा,विराटनगर,धरान,A,easy,नेपालको राजधानी काठमाडौं हो।,Demo training,,1
+ADHIKRIT,SCIENCE,,पानीको रासायनिक सूत्र कुन हो?,CO2,H2O,O2,NaCl,B,easy,पानीमा दुई हाइड्रोजन र एक अक्सिजन परमाणु हुन्छ।,Demo training,,1
+ADHIKRIT,GK,,एक हप्तामा कति दिन हुन्छन्?,५,६,७,८,C,easy,एक हप्तामा सात दिन हुन्छन्।,Demo training,,1
+ADHIKRIT,SCIENCE,,पृथ्वीको प्राकृतिक उपग्रह कुन हो?,सूर्य,मङ्गल,शुक्र,चन्द्रमा,D,easy,चन्द्रमा पृथ्वीको प्राकृतिक उपग्रह हो।,Demo training,,1
+ADHIKRIT,ICT,,CPU को पूरा रूप के हो?,Central Processing Unit,Computer Personal Unit,Control Program Utility,Central Power Unit,A,easy,CPU को पूरा रूप Central Processing Unit हो।,Demo training,,1
