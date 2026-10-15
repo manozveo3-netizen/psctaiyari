@@ -1,0 +1,20 @@
+import assert from 'node:assert/strict';
+import {inspectNasuSet,NASU_QUOTAS} from '../src/lib/nasu.js';
+import {validateQuestions} from '../src/lib/csv.js';
+const units=Object.keys(NASU_QUOTAS).map(syllabus_code=>({syllabus_code,topic_id:syllabus_code}));
+let gk=0;const questions=Object.entries(NASU_QUOTAS).flatMap(([topic_id,n])=>Array.from({length:n},()=>({topic_id,question_level:topic_id.startsWith('1.')?(++gk<=18?1:2):null})));
+assert.equal(questions.length,50);assert.equal(inspectNasuSet(questions,units).valid,true);
+assert.equal(inspectNasuSet(questions.slice(1),units).valid,false);
+assert.equal(inspectNasuSet(questions.map((q,i)=>i===0?{...q,topic_id:'unknown'}:q),units).valid,false);
+assert.equal(inspectNasuSet(questions.map(q=>({...q,question_level:1})),units).valid,false);
+const raw={exam_level_code:'NASU',subject_code:'GK',question_text:'Example',option_a:'A',option_b:'B',option_c:'C',option_d:'D',correct_option:'A',question_level:'2'};
+assert.equal(validateQuestions([raw],[{code:'NASU',id:'n'}],[{code:'GK',id:'g'}],[])[0].question_level,2);
+assert.throws(()=>validateQuestions([{...raw,question_level:'3'}],[{code:'NASU',id:'n'}],[{code:'GK',id:'g'}],[]));
+console.log('PASS: NASU exact distribution, missing unit, wrong level mix and CSV levels');
+
+const {restoreAnswers}=await import('../src/lib/quiz.js');
+const draft={attempt_id:'a',answers:{q:'local'},saved_at:2000};
+assert.deepEqual(restoreAnswers({q:'server'},draft,'a','1970-01-01T00:00:03Z'),{q:'server'});
+assert.deepEqual(restoreAnswers({q:'server'},draft,'a','1970-01-01T00:00:01Z'),{q:'local'});
+assert.deepEqual(restoreAnswers({},draft,'other',null),{});
+console.log('PASS: cross-device resume ignores stale/different-attempt local drafts');

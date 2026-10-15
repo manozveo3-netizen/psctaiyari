@@ -1,2 +1,2 @@
-﻿exam_level_code,subject_code,topic_id,question_text,option_a,option_b,option_c,option_d,correct_option,difficulty,explanation,source_name,source_url,marks
-ADHIKRIT,GK,,नेपालको राजधानी कुन हो?,काठमाडौं,पोखरा,विराटनगर,धरान,A,easy,नेपालको राजधानी काठमाडौं हो।,Demo training,,1
+﻿exam_level_code,subject_code,topic_id,question_text,option_a,option_b,option_c,option_d,correct_option,difficulty,explanation,source_name,source_url,marks,question_level
+ADHIKRIT,GK,,नेपालको राजधानी कुन हो?,काठमाडौं,पोखरा,विराटनगर,धरान,A,easy,नेपालको राजधानी काठमाडौं हो।,Demo training,,1,1
