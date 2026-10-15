@@ -46,3 +46,9 @@ See public/Admin_User_Manual_NE.pdf (also accessible from Admin → User Manual)
 
 Validation: npm run build; node verification/csv.mjs; node verification/guards.mjs; node verification/admin-users.mjs; transactional database import tests; live unauthenticated admin-users call rejected with HTTP 401.
 Real-admin browser account creation and student submission still need the first-run end-to-end check described in the manual.
+
+## Self-paced LMS and Nasu first paper
+
+See [Frontend upgrade notes](FRONTEND-UPGRADE.md). New pages: `/courses`, `/courses/:id`, `/lessons/:id`, and `/admin/learning`. Progress now includes lessons as well as topic mastery. Quiz autosave/resume, answer review and question/option images use the secured database APIs.
+
+Run `npm run check` and `npm run build` before deploying. NASU full mocks use syllabus distribution checks and 2 marks per question. The connected PSC Mock Test database already has the incremental SQL changes applied; do not rerun the old quiz setup SQL over it.

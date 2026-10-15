@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "check": "node verification/config.mjs && node verification/csv.mjs && node verification/guards.mjs && node verification/admin-users.mjs && node verification/nasu.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.58.0",
