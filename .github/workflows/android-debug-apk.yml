@@ -19,7 +19,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
 
       - name: Set up Java
@@ -28,10 +28,11 @@ jobs:
           distribution: temurin
           java-version: '21'
 
-      - name: Install dependencies and native Android project
-        run: |
-          npm install
-          npx cap add android
+      - name: Install dependencies
+        run: npm install
+
+      - name: Create native Android project
+        run: npx cap add android
 
       - name: Build and sync web assets into Android
         run: npm run android:sync
