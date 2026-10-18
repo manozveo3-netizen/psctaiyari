@@ -19,6 +19,9 @@ jobs:
           script: |
             set -e
             cd /home/myadmin/psctaiyari
-            git pull --ff-only origin main
+            # The VPS is a deployment copy; GitHub main is the source of truth.
+            # This avoids failed pulls when an old local commit exists on the VPS.
+            git fetch origin main
+            git reset --hard origin/main
             npm ci
             npm run build
