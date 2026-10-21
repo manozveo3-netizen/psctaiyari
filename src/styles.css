@@ -21,3 +21,16 @@ body{line-height:1.6}h1,h2,h3{line-height:1.5;overflow-wrap:anywhere}h2{font-siz
  .android-bottom-nav{position:fixed;display:flex;align-items:stretch;justify-content:space-around;bottom:0;left:0;right:0;z-index:12;background:rgba(255,255,255,.98);border-top:1px solid var(--line);padding:8px max(12px,env(safe-area-inset-right)) calc(8px + env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left));box-shadow:0 -8px 22px rgba(24,54,48,.08)}
  .android-bottom-nav a{display:flex;flex:1;min-height:48px;gap:4px;align-items:center;justify-content:center;flex-direction:column;color:#718176;font-size:10px;font-weight:700;border-radius:10px}.android-bottom-nav a.active{color:var(--green);background:#eaf2ec}.android-bottom-nav svg{stroke-width:2.3}
 }
+
+/* Three-second Android welcome screen shown before the app's current route. */
+.welcome-splash{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;flex-direction:column;overflow:hidden;background:radial-gradient(ellipse at 50% 42%,#226a55 0%,#155b4a 48%,#10483b 100%);color:#fff;text-align:center;padding:24px;min-height:100dvh}
+.welcome-content{display:flex;align-items:center;flex-direction:column;animation:welcome-appear .55s ease-out both}
+.welcome-content img{width:min(62vw,250px);height:min(62vw,250px);object-fit:contain;border-radius:50%;filter:drop-shadow(0 12px 28px rgba(0,0,0,.2))}
+.welcome-content h1{font-size:24px;letter-spacing:.3px;margin:20px 0 6px;color:#fff}
+.welcome-content p{font-size:13px;color:#e1eee5;margin:0}
+.welcome-loader{height:3px;width:90px;background:rgba(255,255,255,.25);border-radius:9px;margin-top:30px;overflow:hidden;position:relative}
+.welcome-loader:after{content:"";position:absolute;inset:0;background:#e5edc9;transform-origin:left;animation:welcome-progress 2.8s linear forwards}
+.welcome-brand{position:absolute;bottom:max(25px,env(safe-area-inset-bottom));font-size:9px;letter-spacing:2.6px;color:#c9dbcb}
+@keyframes welcome-progress{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes welcome-appear{from{opacity:0;transform:translateY(8px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+@media(prefers-reduced-motion:reduce){.welcome-content{animation:none}.welcome-loader:after{animation:none;transform:scaleX(1)}}
