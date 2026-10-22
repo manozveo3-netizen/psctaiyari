@@ -18,6 +18,10 @@ const excludedFiles = new Set([
   'src/pages/DeleteAccount.jsx', 'src/pages/LegalPage.jsx',
   'src/pages/admin/AccountDeletions.jsx',
   'src/pages/admin/Admin.jsx',
+  // Website QR checkout must never synchronize into the Google Play Android branch.
+  'src/pages/Payment.jsx', 'src/pages/Pricing.jsx',
+  'src/pages/admin/PaymentsAdmin.jsx',
+  'src/pages/admin/PaymentQRSettings.jsx',
   // These are currently different implementations across the platforms.
   'src/pages/admin/LearningAdmin.jsx'
 ]);

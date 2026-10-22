@@ -22,7 +22,7 @@ Source extensions synchronized: `.js`, `.jsx`, `.mjs`, `.ts`, `.tsx`. The allowl
 
 - Website: `.github/workflows/deploy.yml`, Nginx/VPS deployment, website-specific dependency scripts.
 - Android: `capacitor.config.json`, native `android/**`, `.github/workflows/android-*.yml`, Android package scripts, signing/Gradle files, icons and Android-specific assets.
-- Deliberate React exclusions: `src/App.jsx`, `src/main.jsx`, `src/styles.css`, `src/components/Layout.jsx`, `src/pages/DeleteAccount.jsx`, `src/pages/LegalPage.jsx`, `src/pages/admin/AccountDeletions.jsx`, `src/pages/admin/Admin.jsx`, `src/pages/admin/LearningAdmin.jsx`.
+- Deliberate React exclusions: `src/App.jsx`, `src/main.jsx`, `src/styles.css`, `src/components/Layout.jsx`, `src/pages/DeleteAccount.jsx`, `src/pages/LegalPage.jsx`, `src/pages/admin/AccountDeletions.jsx`, `src/pages/admin/Admin.jsx`, `src/pages/admin/LearningAdmin.jsx`, `src/pages/Payment.jsx`, `src/pages/Pricing.jsx`, `src/pages/admin/PaymentsAdmin.jsx`, `src/pages/admin/PaymentQRSettings.jsx`.
 
 The last five admin/legal exclusions contain divergent implementations. Reconcile them explicitly or extract their shared logic into `src/lib` before enabling synchronization; otherwise automatic replacement risks losing Android functionality.
 
@@ -33,3 +33,5 @@ If an eligible Android file was changed independently after the baseline, and it
 GitHub suppresses ordinary `push` workflows triggered by pushes made with `GITHUB_TOKEN`. Therefore this synchronization workflow validates and generates its own Android debug APK artifact instead of assuming the existing Android debug/release workflows will be triggered. Android release AAB signing remains under the existing Android workflow; no production Play Store release is published by synchronization.
 
 Supabase schema migrations, Edge Function deployment, website deployment, and Google Play production publishing remain independent operations. Source synchronization alone does not perform them.
+
+**Payment policy boundary:** Web-only QR subscription checkout and payment administration are never synchronized to Google Play Android branch. The Play-distributed app continues to show existing entitlements without outside-purchase prompts.
