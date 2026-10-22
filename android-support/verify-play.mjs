@@ -21,3 +21,18 @@ assert.ok(deletion.includes('request-account-deletion'));
 assert.ok(deletion.includes('https://psctaiyari.com/delete-account'));
 assert.ok(!access.includes('/payment?plan='));
 console.log('PASS: Android Play readiness: routes, checkout, authentication, account deletion');
+
+const cards=read('src/android/AndroidCourses.jsx');
+const checkout=read('src/android/DirectBuyButton.jsx');
+const release=read('.github/workflows/android-release-aab.yml');
+const debug=read('.github/workflows/android-debug-apk.yml');
+assert.ok(app.includes('<AndroidCourses/>'));
+assert.ok(app.includes('<AndroidCourse/>'));
+assert.ok(app.includes('<AndroidDashboard/>'));
+assert.ok(cards.includes('<DirectBuyButton'));
+assert.ok(checkout.includes("VITE_ANDROID_DISTRIBUTION === 'direct'"),'Buy CTA must be gated by direct distribution');
+assert.ok(checkout.includes('https://psctaiyari.com/pricing'));
+assert.ok(release.includes('VITE_ANDROID_DISTRIBUTION: play'));
+assert.ok(release.includes('verify-play-bundle.mjs'));
+assert.ok(debug.includes('distribution:'));
+console.log('PASS: external website Buy button only available in direct APK build');

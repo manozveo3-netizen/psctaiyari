@@ -28,3 +28,13 @@ This is the Android-only `android-only-app` branch. The website `main` remains s
 - Complete Play Console Data safety, permissions, target audience, content rating, tester access and listing assets.
 - On physical Android devices test registration/email confirmation, password reset, course PDF, offline/network error handling, navigation/back, authentication session, and account deletion fallback.
 - If paid digital courses are to be sold from Android later, do not reinstate QR checkout: implement compliant Play Billing first.
+
+## Direct-distribution APK website checkout (NOT for Google Play)
+The course card, dashboard course card and course details contain a Buy button **only** when building a separately distributed Android APK with `VITE_ANDROID_DISTRIBUTION=direct`. It opens `https://psctaiyari.com/pricing` in a native browser tab, where the customer selects a plan and completes QR checkout; the payment remains pending until Admin verifies the bank/wallet transaction. A direct course-plan checkout cannot yet be resolved because `plan_courses` currently has no mappings.
+
+- GitHub Actions -> **Build Android debug APK** -> **Run workflow** on `android-only-app` -> select `distribution=direct` -> download **PSC-Taiyari-direct-debug-APK**. Distribute that APK outside Google Play, subject to applicable laws.
+- On ordinary branch pushes, debug builds default to `distribution=play`.
+- **Build signed Play Store AAB** always forces `VITE_ANDROID_DISTRIBUTION=play`; a bundle safety check fails if external QR checkout CTA or website pricing URL appears in compiled JS.
+- Do **not** submit direct-distribution APK or an AAB containing website Buy links to Google Play. Google forbids steering users to outside checkout for digital content without an applicable approved regional program.
+- The in-app login and external website browser have separate auth sessions; the user may need to log in again on the website.
+- The website QR image is configured separately via `/admin/payment-qr`; no QR is bundled in the app.

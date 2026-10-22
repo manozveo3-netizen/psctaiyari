@@ -1,0 +1,9 @@
+import assert from 'node:assert/strict';
+import {readdirSync,readFileSync} from 'node:fs';
+import {join} from 'node:path';
+assert.equal(process.env.VITE_ANDROID_DISTRIBUTION,'play','Release AAB MUST build in play distribution mode');
+const folder='dist/assets';
+const bundled=readdirSync(folder).filter(name=>name.endsWith('.js')).map(name=>readFileSync(join(folder,name),'utf8')).join('\n');
+assert.ok(!bundled.includes('Buy · वेबसाइट'),'Google Play bundle contains external digital checkout CTA');
+assert.ok(!bundled.includes('https://psctaiyari.com/pricing'),'Google Play bundle links to external digital checkout');
+console.log('PASS: Play Store AAB excludes external course-purchase button and checkout link');
