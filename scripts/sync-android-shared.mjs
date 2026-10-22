@@ -81,7 +81,7 @@ for (const name of sharedDependencies) {
     continue;
   }
   // Keep native Android dependencies, scripts, and unrelated tooling untouched.
-  if (androidPkg.devDependendencies?.[name] !== undefined) {
+  if (androidPkg.devDependencies?.[name] !== undefined) {
     delete androidPkg.devDependencies[name];
   }
   if (newValue === null) delete androidPkg.dependencies?.[name];
