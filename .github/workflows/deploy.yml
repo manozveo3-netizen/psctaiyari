@@ -23,5 +23,7 @@ jobs:
             # This avoids failed pulls when an old local commit exists on the VPS.
             git fetch origin main
             git reset --hard origin/main
+            # Remove stale dependency files to avoid npm ENOTEMPTY failures.
+            rm -rf node_modules
             npm ci
             npm run build
