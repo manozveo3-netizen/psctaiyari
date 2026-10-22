@@ -31,7 +31,22 @@ Deno.serve(async req=>{
  if(!String(body.note||'').trim())return reply({error:'Rejection reason required'},400);
  const {error}=await admin.from('account_deletion_requests').update({status:'rejected',review_note:String(body.note).slice(0,2000)}).eq('id',item.id);if(error)throw error;return reply({ok:true});
  }
- // Destructive deletion requires a separately verified data-retention and cascade policy.
- return reply({error:'Account deletion is not enabled until dependent data and payment retention are verified. Request remains in review.'},409);
+ if(item.status!=='in_review')return reply({error:'Mark this request In Review first'},409);
+ if(body.confirm!==item.user_id)return reply({error:'Exact User ID confirmation required'},400);
+ if(item.user_id===user.id)return reply({error:'Cannot delete your own admin account'},403);
+ const {data:target,error:targetError}=await admin.from('profiles').select('role').eq('id',item.user_id).maybeSingle();
+ if(targetError||target?.role!=='student')return reply({error:'Only student accounts can be processed'},403);
+ const {data:dependencies,error:dependencyError}=await admin.rpc('account_deletion_dependency_counts',{target_user:item.user_id});
+ if(dependencyError||!dependencies)return reply({error:'Dependency checks unavailable; deletion not started'},409);
+ if(Number(dependencies.payments)>0||Number(dependencies.jobs)>0||Number(dependencies.storage)>0)return reply({error:'Account has financial records, generation jobs or storage objects requiring manual retention review'},409);
+ const {data:audit,error:auditError}=await admin.from('account_deletion_audit').insert({request_id:item.id,user_id:item.user_id,performed_by:user.id,outcome:'started',detail:'Approved by administrator'}).select('id').single();
+ if(auditError)return reply({error:'Unable to establish deletion audit; no deletion performed'},409);
+ const {error:deleteError}=await admin.auth.admin.deleteUser(item.user_id);
+ if(deleteError){
+  await admin.from('account_deletion_audit').update({outcome:'failed',detail:deleteError.message.slice(0,500)}).eq('id',audit.id);
+  return reply({error:'Deletion failed: '+deleteError.message},409);
+ }
+ const {error:finishError}=await admin.from('account_deletion_audit').update({outcome:'completed',completed_at:new Date().toISOString(),detail:'Auth user and cascade-dependent personal data removed'}).eq('id',audit.id);
+ return reply({ok:true,deleted:true,audit_saved:!finishError});
  }catch(e){return reply({error:e instanceof Error?e.message:'Request failed'},500)}
 });
