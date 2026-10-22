@@ -3,7 +3,7 @@ import {supabase} from '../../lib/supabase';
 
 export default function AccountDeletions(){
  const [items,setItems]=useState([]),[busy,setBusy]=useState(''),[error,setError]=useState(''),[message,setMessage]=useState(''),[notes,setNotes]=useState({});
- const invoke=async(body)=>{const {data,error}=await supabase.functions.invoke('admin-account-deletions',{body});if(error)throw error;if(data?.error)throw Error(data.error);return data};
+ const invoke=async(body)=>{const {data,error}=await supabase.functions.invoke('admin-account-deletions',{body});if(error){let details=null;try{details=await error.context?.json()}catch{}throw new Error(details?.error||error.message)}if(data?.error)throw Error(data.error);return data};
  const load=useCallback(async()=>{setError('');try{const data=await invoke({action:'list'});setItems(data.requests||[])}catch(e){setError(e.message)}},[]);
  useEffect(()=>{load()},[load]);
  async function act(item,action){
