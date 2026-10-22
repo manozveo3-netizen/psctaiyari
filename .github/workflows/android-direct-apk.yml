@@ -1,0 +1,55 @@
+name: Build DIRECT APK with website Buy button (not Google Play)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [android-only-app]
+    paths:
+      - 'src/android/**'
+      - 'src/App.jsx'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/android-direct-apk.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  direct-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      VITE_ANDROID_DISTRIBUTION: direct
+    steps:
+      - name: Checkout Android branch
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Install dependencies
+        run: npm install
+      - name: Verify source and policy boundaries
+        run: npm run check
+      - name: Generate Android native project
+        run: npx cap add android
+      - name: Build DIRECT web assets with Buy button
+        run: npm run android:sync
+      - name: Check generated Android SDK levels
+        run: node android-support/check-generated-sdk.mjs
+      - name: Assemble direct debug APK
+        working-directory: android
+        run: ./gradlew assembleDebug --no-daemon
+      - name: Upload DIRECT-ONLY APK (NOT for Google Play)
+        uses: actions/upload-artifact@v4
+        with:
+          name: PSC-Taiyari-DIRECT-WEBSITE-BUY-NOT-FOR-PLAY-debug-APK
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
