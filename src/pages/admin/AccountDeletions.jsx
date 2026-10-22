@@ -32,7 +32,7 @@ export default function AccountDeletions(){
     <div style={{display:'flex',gap:8,flexWrap:'wrap',marginTop:12}}>
      {item.status==='pending'&&<button className="btn" disabled={!!busy} onClick={()=>act(item,'review')}>Mark In Review</button>}
      <button className="btn" disabled={!!busy} onClick={()=>act(item,'reject')}>Reject</button>
-     {item.status==='in_review'&&<button className="btn" disabled={!!busy} onClick={()=>act(item,'delete')}>Approve & Delete Account</button>}
+     {item.status==='in_review'&&<button className="btn" disabled={!!busy} disabled title="Permanent account deletion requires verified retention and audit checks">Deletion unavailable — safety checks pending</button>}
     </div>
    </>}
   </article>)}
