@@ -36,3 +36,16 @@ assert.ok(release.includes('VITE_ANDROID_DISTRIBUTION: play'));
 assert.ok(release.includes('verify-play-bundle.mjs'));
 assert.ok(debug.includes('distribution:'));
 console.log('PASS: external website Buy button only available in direct APK build');
+
+const support=read('src/android/WebsiteSupport.jsx');
+const lessons=read('src/android/AndroidCourse.jsx');
+const listing=read('src/android/AndroidCourses.jsx');
+assert.ok(app.includes('<WebsiteSupport/>'),'Website support route is available');
+assert.ok(support.includes('https://psctaiyari.com/app-support.html'));
+assert.ok(!support.includes('https://psctaiyari.com/pricing'),'Help URL cannot be checkout');
+assert.ok(access.includes('psctaiyari.com'),'Subscription information must include website name');
+assert.ok(!access.includes('<a href=')&&!access.includes('Browser.open'),'No external purchase link in entitlements');
+assert.ok(lessons.includes(".eq('is_preview',true)"),'Demo must only use published preview lessons');
+assert.ok(lessons.includes('डेमो पाठ अझै प्रकाशित भएको छैन'),'Do not invent sample lessons');
+assert.ok(listing.includes('निःशुल्क पूर्वावलोकन'));
+console.log('PASS: consumption-only website info, free preview and support-only web route');

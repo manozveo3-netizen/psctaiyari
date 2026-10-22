@@ -6,4 +6,6 @@ const folder='dist/assets';
 const bundled=readdirSync(folder).filter(name=>name.endsWith('.js')).map(name=>readFileSync(join(folder,name),'utf8')).join('\n');
 assert.ok(!bundled.includes('Buy · वेबसाइट'),'Google Play bundle contains external digital checkout CTA');
 assert.ok(!bundled.includes('https://psctaiyari.com/pricing'),'Google Play bundle links to external digital checkout');
+assert.ok(!bundled.includes('https://psctaiyari.com/payment'),'Google Play bundle links to QR payment checkout');
+assert.ok(bundled.includes('https://psctaiyari.com/app-support.html'),'Google Play bundle should link only to website help');
 console.log('PASS: Play Store AAB excludes external course-purchase button and checkout link');

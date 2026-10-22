@@ -38,3 +38,11 @@ The course card, dashboard course card and course details contain a Buy button *
 - Do **not** submit direct-distribution APK or an AAB containing website Buy links to Google Play. Google forbids steering users to outside checkout for digital content without an applicable approved regional program.
 - The in-app login and external website browser have separate auth sessions; the user may need to log in again on the website.
 - The website QR image is configured separately via `/admin/payment-qr`; no QR is bundled in the app.
+
+## October 2026: Play-safe subscription information and demo
+- Play course cards link to a free **course overview** without any direct external purchase button. The overview does not imply a real lesson is free unless a published `lessons.is_preview=true` lesson is found for the signed-in user.
+- On course details, signed-in users see real authorized preview lessons; if no such lesson exists, the app honestly displays that the free demo is not yet published. (The current published course has no lessons in this table.)
+- The `/pricing` route shows read-only active entitlement and a **plain-text** mention of `psctaiyari.com` as an available subscription source. No tap-through payment link or WebView checkout in the Play build.
+- `/website-support` is an administrative/support-only app page. Its outbound link opens dedicated standalone `https://psctaiyari.com/app-support.html` served from `main:public/app-support.html` with no checkout links or site purchase navigation.
+- Keep the standalone help page non-commercial. If someone later adds pricing or payment navigation there, remove its outbound link from the Play build immediately; Google says even admin/help URLs must not eventually lead to disallowed alternative digital payments.
+- Direct-distribution APK outside Play retains its separately gated website Buy button. **Never upload this APK to Google Play.**
