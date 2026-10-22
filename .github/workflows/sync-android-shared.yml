@@ -1,0 +1,122 @@
+name: Sync shared website code to Android
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'verification/**'
+      - 'supabase/functions/**'
+      - 'package.json'
+      - 'scripts/sync-android-shared.mjs'
+      - '.github/workflows/sync-android-shared.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-shared-code-sync
+  cancel-in-progress: false
+
+jobs:
+  synchronize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout main with complete history
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Prepare independent Android worktree
+        run: |
+          git fetch --no-tags origin +refs/heads/android-only-app:refs/remotes/origin/android-only-app
+          git worktree add --detach android-worktree refs/remotes/origin/android-only-app
+
+      - name: Apply safe one-way shared-code updates
+        id: sync
+        run: node scripts/sync-android-shared.mjs android-worktree
+
+      - name: Setup Node.js
+        if: steps.sync.outputs.changed == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Reconcile Android dependency lockfile
+        if: steps.sync.outputs.changed == 'true'
+        working-directory: android-worktree
+        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+
+      - name: Install exact Android dependencies
+        if: steps.sync.outputs.changed == 'true'
+        working-directory: android-worktree
+        run: npm ci --no-audit --no-fund
+
+      - name: Run project verification suite
+        if: steps.sync.outputs.changed == 'true'
+        working-directory: android-worktree
+        run: npm run check
+
+      - name: Verify Android web bundle
+        if: steps.sync.outputs.changed == 'true'
+        working-directory: android-worktree
+        run: npm run build
+
+      - name: Set up Java for Android Gradle
+        if: steps.sync.outputs.changed == 'true'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Create Android native project
+        if: steps.sync.outputs.changed == 'true'
+        working-directory: android-worktree
+        run: npx cap add android
+
+      - name: Update Android native web assets
+        if: steps.sync.outputs.changed == 'true'
+        working-directory: android-worktree
+        run: npx cap sync android
+
+      - name: Build Android debug APK before accepting sync
+        if: steps.sync.outputs.changed == 'true'
+        working-directory: android-worktree/android
+        run: ./gradlew assembleDebug --no-daemon
+
+      - name: Upload validated Android debug APK
+        if: steps.sync.outputs.changed == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: PSC-Taiyari-synchronized-debug-APK
+          path: android-worktree/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Commit validated changes and fast-forward Android branch
+        if: steps.sync.outputs.changed == 'true'
+        run: |
+          git -C android-worktree add -A -- src verification supabase package.json package-lock.json .github/android-sync-state.json
+          if git -C android-worktree diff --cached --quiet; then
+            echo "Shared Android sources were already identical; no commit required."
+            exit 0
+          fi
+          git -C android-worktree config user.name "github-actions[bot]"
+          git -C android-worktree config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git -C android-worktree commit -m "chore(android): sync verified shared code from main"
+          git -C android-worktree push origin HEAD:refs/heads/android-only-app
+
+      - name: Record synchronization result
+        if: always()
+        run: |
+          if [ "${{ steps.sync.outputs.changed }}" = "false" ]; then
+            echo "No shared-code changes; Android branch not modified." >> "$GITHUB_STEP_SUMMARY"
+          elif [ "${{ job.status }}" = "success" ]; then
+            echo "Shared code validated and synchronized to android-only-app. Debug APK is attached to this run." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Synchronization failed safely. Check step logs; Android branch was not force-pushed." >> "$GITHUB_STEP_SUMMARY"
+          fi
