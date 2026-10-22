@@ -2,6 +2,11 @@ name: Build signed Play Store AAB
 
 on:
   workflow_dispatch:
+    inputs:
+      publish_internal:
+        description: 'Manually upload this signed AAB to Google Play INTERNAL testing (not production)'
+        type: boolean
+        default: false
   push:
     branches: [android-only-app]
 
@@ -38,6 +43,9 @@ jobs:
 
       - name: Build and sync assets
         run: npm run android:sync
+
+      - name: Verify Android target/minimum SDKs
+        run: node android-support/check-generated-sdk.mjs
 
       - name: Restore upload keystore
         env:
@@ -105,3 +113,21 @@ jobs:
           path: android/app/build/outputs/bundle/release/*.aab
           if-no-files-found: error
           retention-days: 30
+
+      # Manual opt-in only: an ordinary code push NEVER publishes to Google Play.
+      - name: Require Play API credentials for internal testing
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.publish_internal == true }}
+        env:
+          GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+        run: |
+          test -n "$GOOGLE_PLAY_SERVICE_ACCOUNT_JSON" || { echo "::error::Missing GOOGLE_PLAY_SERVICE_ACCOUNT_JSON secret and Play API setup"; exit 1; }
+
+      - name: Upload signed AAB to Google Play internal testing only
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.publish_internal == true }}
+        uses: r0adkll/upload-google-play@v1.1.5
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: com.nextlayers.psctaiyari
+          releaseFiles: android/app/build/outputs/bundle/release/*.aab
+          tracks: internal
+          status: completed

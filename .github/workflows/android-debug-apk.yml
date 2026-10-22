@@ -37,6 +37,9 @@ jobs:
       - name: Build and sync web assets into Android
         run: npm run android:sync
 
+      - name: Verify Android target/minimum SDKs
+        run: node android-support/check-generated-sdk.mjs
+
       - name: Build installable debug APK
         working-directory: android
         run: ./gradlew assembleDebug
