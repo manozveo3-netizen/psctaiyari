@@ -1,2 +1,16 @@
-import {Link} from 'react-router-dom';import {BookOpen,Clock,BarChart3} from 'lucide-react';
-export default function Home(){return <><section className="learning-hero landing-hero"><div><p className="eyebrow">LOKSEWA TAIYARI · BY NEXTLAYERS</p><h1>तपाईंको तयारी।<br/>तपाईंको गति।<br/>सफलतातर्फको यात्रा।</h1><p>पाठ्यक्रमअनुसार अध्ययन, learning materials, mock tests र प्रगति — एउटै ठाउँमा।</p><div className="actions"><Link className="btn light" to="/courses">पाठ्यक्रम हेर्नुहोस् →</Link><Link className="btn ghost" to="/tests">अभ्यास परीक्षा</Link></div></div><BookOpen className="hero-illustration" aria-hidden="true"/></section><div className="cards feature-cards"><article className="card"><BookOpen/><h2>आफ्नै गतिमा सिक्नुहोस्</h2><p className="muted">पाठ, नोट र उपलब्ध learning resources बाट क्रमबद्ध अध्ययन।</p><Link to="/courses">पढाइ सुरु गर्नुहोस् →</Link></article><article className="card"><Clock/><h2>अभ्यासबाट आत्मविश्वास</h2><p className="muted">समयबद्ध परीक्षामा सबै प्रश्न एउटै पेजमा उत्तर दिनुहोस्।</p><Link to="/tests">Mock tests हेर्नुहोस् →</Link></article><article className="card"><BarChart3/><h2>आफ्नो प्रगति बुझ्नुहोस्</h2><p className="muted">पूरा भएका पाठ र अभ्यासको नतिजाबाट अर्को कदम तय गर्नुहोस्।</p><Link to="/progress">मेरो प्रगति →</Link></article></div></>}
+import {Link} from 'react-router-dom';
+import {BookOpen,ClipboardCheck,BarChart3} from 'lucide-react';
+export default function Home(){return <div className="simple-landing">
+  <section className="simple-hero">
+    <span className="simple-kicker">लोकसेवा तयारी अब सजिलो</span>
+    <h1>तयारी स्मार्ट बनाउनुहोस्।<br/>सफलतातर्फ अघि बढ्नुहोस्।</h1>
+    <p>पाठ्यक्रम, अध्ययन सामग्री र Mock Test — सबै एकै ठाउँमा।</p>
+    <Link className="btn simple-primary" to="/courses">तयारी सुरु गर्नुहोस् →</Link>
+    <Link className="simple-secondary" to="/tests">अभ्यास परीक्षा हेर्नुहोस् →</Link>
+  </section>
+  <section className="simple-features" aria-label="मुख्य सुविधाहरू">
+    <article><span className="simple-feature-icon"><BookOpen aria-hidden="true"/></span><h2>अध्ययन सामग्री</h2><p>पाठ, नोट र उपयोगी संसाधन एउटै ठाउँमा।</p></article>
+    <article><span className="simple-feature-icon"><ClipboardCheck aria-hidden="true"/></span><h2>Mock Test</h2><p>वास्तविक परीक्षा जस्तै अभ्यास गर्नुहोस्।</p></article>
+    <article><span className="simple-feature-icon"><BarChart3 aria-hidden="true"/></span><h2>तपाईंको प्रगति</h2><p>आफ्नो नतिजा र कमजोर पक्ष पहिचान गर्नुहोस्।</p></article>
+  </section>
+</div>}

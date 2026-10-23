@@ -1,9 +1,10 @@
 import {useState} from 'react';
 import {supabase} from '../lib/supabase';
-import {Navigate,useLocation} from 'react-router-dom';
+import {Navigate,useLocation,useSearchParams} from 'react-router-dom';
 import {useAuth} from '../contexts/AuthContext';
 export default function Login(){
- const [mode,setMode]=useState('login'),[f,setF]=useState({name:'',email:'',password:''}),[msg,setMsg]=useState(''),[busy,setBusy]=useState(false);
+ const [searchParams]=useSearchParams();
+ const [mode,setMode]=useState(()=>searchParams.get('mode')==='register'?'register':'login'),[f,setF]=useState({name:'',email:'',password:''}),[msg,setMsg]=useState(''),[busy,setBusy]=useState(false);
  const {user,loading}=useAuth();const location=useLocation();
  const from=location.state?.from;const destination=typeof from==='string'&&from.startsWith('/')&&!from.startsWith('//')&&!from.startsWith('/login')?from:'/dashboard';
  if(user&&!loading)return <Navigate to={destination} replace/>;
