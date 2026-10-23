@@ -7,7 +7,7 @@ const login=read('src/android/AndroidLogin.jsx');
 const deletion=read('src/android/AccountDeletion.jsx');
 const access=read('src/android/AccessStatus.jsx');
 const cfg=JSON.parse(read('capacitor.config.json'));
-assert.equal(cfg.appId,'com.nextlayers.psctaiyari');
+assert.equal(cfg.appId,'com.psctaiyari.psctaiyari');
 assert.ok(entry.includes('HashRouter'),'Capacitor must use HashRouter for local navigation');
 assert.ok(app.includes('<AndroidLogin/>'));
 assert.ok(app.includes('<AccessStatus/>'));
