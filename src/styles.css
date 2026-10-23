@@ -31,3 +31,19 @@ body{line-height:1.6}h1,h2,h3{line-height:1.5;overflow-wrap:anywhere}h2{font-siz
 .simple-features h2{font-size:20px;margin:8px 0}
 .simple-features p{color:#66716f;line-height:1.8;margin:0}
 @media(max-width:650px){.public-shell .top{flex-wrap:nowrap;gap:10px}.public-shell .brand{font-size:15px}.public-shell .brand .brand-mark{font-size:17px;padding:5px 8px}.public-shell .brand small{font-size:7px}.public-shell .top nav{gap:8px}.public-shell .top nav a{font-size:12px!important}.public-shell .top nav .register-link{padding:8px 11px}.simple-hero{padding:35px 0 20px}.simple-hero h1{font-size:clamp(25px,6.4vw,36px)}.simple-features{grid-template-columns:1fr;gap:5px;margin-top:20px}.simple-features article{border-right:0;border-bottom:1px solid #e3e8e2;padding:15px}.simple-features article:last-child{border:0}}
+
+/* Mobile navigation: keep every destination (including logout) discoverable without horizontal scrolling. */
+@media(max-width:650px){
+  .sidebar nav{display:flex;flex-wrap:wrap;overflow:visible;gap:6px}
+  .sidebar nav a,.sidebar .linkbtn{min-height:44px;white-space:normal;border:1px solid var(--line);border-radius:9px}
+  .sidebar nav a.active{border-color:var(--green)}
+  .app-shell .container{min-width:0}
+  .site-footer{line-height:1.8}
+}
+@media(max-width:390px){
+  .brand{font-size:15px}
+  .brand small{letter-spacing:1px}
+  .app-shell .top{gap:8px}
+  .grid4{grid-template-columns:1fr}
+}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}

@@ -1,11 +1,13 @@
-import {useState} from 'react';
+import {useEffect,useState} from 'react';
 import {supabase} from '../lib/supabase';
 import {Navigate,useLocation,useSearchParams} from 'react-router-dom';
 import {useAuth} from '../contexts/AuthContext';
 export default function Login(){
- const [searchParams]=useSearchParams();
- const [mode,setMode]=useState(()=>searchParams.get('mode')==='register'?'register':'login'),[f,setF]=useState({name:'',email:'',password:''}),[msg,setMsg]=useState(''),[busy,setBusy]=useState(false);
+ const [searchParams,setSearchParams]=useSearchParams();
+ const [mode,setMode]=useState(()=>['register','forgot'].includes(searchParams.get('mode'))?searchParams.get('mode'):'login'),[f,setF]=useState({name:'',email:'',password:''}),[msg,setMsg]=useState(''),[busy,setBusy]=useState(false);
+ useEffect(()=>{setMode(['register','forgot'].includes(searchParams.get('mode'))?searchParams.get('mode'):'login');},[searchParams]);
  const {user,loading}=useAuth();const location=useLocation();
+ function switchMode(next){setMode(next);setMsg('');setSearchParams(next==='register'?{mode:'register'}:next==='forgot'?{mode:'forgot'}:{},{replace:true});}
  const from=location.state?.from;const destination=typeof from==='string'&&from.startsWith('/')&&!from.startsWith('//')&&!from.startsWith('/login')?from:'/dashboard';
  if(user&&!loading)return <Navigate to={destination} replace/>;
  async function submit(e){e.preventDefault();if(busy)return;setBusy(true);setMsg('');
@@ -21,5 +23,5 @@ export default function Login(){
    if(mode==='register'&&!result.data.session)setMsg('Check your email to confirm your account, then log in.');
   }catch(e){setMsg(e.message);}finally{setBusy(false);}
  }
- return <div className="auth card"><h2>{mode==='login'?'Welcome back':mode==='forgot'?'Reset your password':'Create account'}</h2><form onSubmit={submit}>{mode==='register'&&<label>Full name<input autoComplete="name" value={f.name} onChange={e=>setF({...f,name:e.target.value})} required/></label>}<label>Email<input autoComplete="email" type="email" value={f.email} onChange={e=>setF({...f,email:e.target.value})} required/></label>{mode!=='forgot'&&<label>Password<input autoComplete={mode==='login'?'current-password':'new-password'} type="password" minLength={mode==='register'?8:1} value={f.password} onChange={e=>setF({...f,password:e.target.value})} required/></label>}<button className="btn" disabled={busy}>{busy?'Please wait…':mode==='login'?'Login':mode==='forgot'?'Send reset link':'Register'}</button></form>{(msg||location.state?.message)&&<p className="notice" role="status">{msg||location.state.message}</p>}<button className="textbtn" disabled={busy} onClick={()=>{setMode(mode==='login'?'register':'login');setMsg('');}}>{mode==='login'?'New user? Register':'Already registered? Login'}</button>{mode==='login'&&<button className="textbtn" disabled={busy} onClick={()=>{setMode('forgot');setMsg('');}}>Forgot password?</button>}</div>;
+ return <div className="auth card"><h2>{mode==='login'?'Welcome back':mode==='forgot'?'Reset your password':'Create account'}</h2><form onSubmit={submit}>{mode==='register'&&<label>Full name<input autoComplete="name" value={f.name} onChange={e=>setF({...f,name:e.target.value})} required/></label>}<label>Email<input autoComplete="email" type="email" value={f.email} onChange={e=>setF({...f,email:e.target.value})} required/></label>{mode!=='forgot'&&<label>Password<input autoComplete={mode==='login'?'current-password':'new-password'} type="password" minLength={mode==='register'?8:1} value={f.password} onChange={e=>setF({...f,password:e.target.value})} required/></label>}<button className="btn" disabled={busy}>{busy?'Please wait…':mode==='login'?'Login':mode==='forgot'?'Send reset link':'Register'}</button></form>{(msg||location.state?.message)&&<p className="notice" role="status">{msg||location.state.message}</p>}<button className="textbtn" disabled={busy} onClick={()=>switchMode(mode==='login'?'register':'login')}>{mode==='login'?'New user? Register':'Already registered? Login'}</button>{mode==='login'&&<button className="textbtn" disabled={busy} onClick={()=>switchMode('forgot')}>Forgot password?</button>}</div>;
 }
