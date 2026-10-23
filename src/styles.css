@@ -11,3 +11,23 @@ body{line-height:1.6}h1,h2,h3{line-height:1.5;overflow-wrap:anywhere}h2{font-siz
 @media(max-width:1150px){.dashboard-columns{grid-template-columns:1fr}.hero-illustration{width:105px;height:105px;margin-right:10px}.app-shell .container{padding:25px}.quiz-columns{grid-template-columns:minmax(0,1fr) 205px}.grid4{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:850px){.sidebar{width:190px;padding-inline:10px}.app-shell .container{margin-left:190px}.quiz-columns{grid-template-columns:1fr}.quiz-navigation{position:static}.hero-illustration{display:none}.top{padding-inline:20px}.workspace-label{display:none}.course-cards{grid-template-columns:1fr}.learning-hero{padding:25px}.landing-hero h1{font-size:36px}.public-shell .top{height:auto;flex-wrap:wrap;padding-block:12px}.public-shell .top nav{flex-wrap:wrap}.plans{grid-template-columns:1fr}}
 @media(max-width:650px){.top{height:76px;padding:0 15px}.brand{font-size:18px}.header-right{gap:10px}.sidebar{position:static;width:100%;padding:10px;border-right:0;border-bottom:1px solid var(--line)}.sidebar>.eyebrow,.sidebar-note{display:none}.sidebar nav{display:flex;overflow-x:auto;gap:4px}.sidebar nav a,.sidebar .linkbtn{padding:10px;flex-shrink:0;font-size:12px}.sidebar nav svg{width:16px}.app-shell .container{margin:0;padding:23px 16px}.workspace-breadcrumb{font-size:9px}.pagehead{align-items:flex-start;gap:12px;flex-wrap:wrap}.pagehead h1{font-size:25px}.learning-hero h2{font-size:25px}.learning-hero{padding:24px}.grid4{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.stat{padding:16px}.stat strong{font-size:23px}.course-cards,.feature-cards{grid-template-columns:1fr}.testtop{top:76px;align-items:flex-start}.testtop b{font-size:15px}.testtop small{font-size:11px}.question{scroll-margin-top:200px}.card{padding:19px}.course-card{padding:0}.material-row{flex-wrap:wrap}.material-row .grow{flex-basis:60%}.section-heading{align-items:flex-start}.section-heading h2{font-size:17px}.site-footer{flex-wrap:wrap}.progressrow{flex-wrap:wrap}.progressrow>span{width:100%}.lesson-row{align-items:flex-start}.landing-hero h1{font-size:30px}.public-shell .container{padding:24px 16px}}
+
+/* Minimal public landing page and authentication actions */
+.public-shell .top nav .register-link{background:#164034;color:#fff!important;padding:9px 18px;border-radius:8px;font-weight:700}
+.public-shell .top nav .register-link:hover{background:#205d4d}
+.simple-landing{max-width:1120px;margin:0 auto;color:#164034}
+.simple-hero{display:flex;flex-direction:column;align-items:center;text-align:center;padding:50px 12px 30px}
+.simple-kicker{display:inline-block;border-radius:999px;background:#ebf2d0;color:#164034;font-weight:700;padding:8px 19px}
+.simple-hero h1{font-size:clamp(30px,4.2vw,56px);line-height:1.48;margin:22px 0 10px;font-weight:800;letter-spacing:-.025em}
+.simple-hero p{font-size:clamp(14px,1.5vw,19px);color:#66716f;margin:0 0 25px}
+.simple-primary{background:#164034;padding:13px 28px;font-size:16px}
+.simple-primary:hover{background:#205d4d}
+.simple-secondary{margin-top:14px;font-weight:700;color:#205d4d;text-decoration:underline;text-underline-offset:4px}
+.simple-features{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;margin:26px 0 20px;text-align:center}
+.simple-features article{padding:16px 20px;border-right:1px solid #e3e8e2}
+.simple-features article:last-child{border-right:0}
+.simple-feature-icon{display:grid;place-items:center;margin:0 auto 12px;width:64px;height:64px;border-radius:50%;background:#ebf2d0;color:#205d4d}
+.simple-feature-icon svg{width:29px;height:29px}
+.simple-features h2{font-size:20px;margin:8px 0}
+.simple-features p{color:#66716f;line-height:1.8;margin:0}
+@media(max-width:650px){.public-shell .top{flex-wrap:nowrap;gap:10px}.public-shell .brand{font-size:15px}.public-shell .brand .brand-mark{font-size:17px;padding:5px 8px}.public-shell .brand small{font-size:7px}.public-shell .top nav{gap:8px}.public-shell .top nav a{font-size:12px!important}.public-shell .top nav .register-link{padding:8px 11px}.simple-hero{padding:35px 0 20px}.simple-hero h1{font-size:clamp(25px,6.4vw,36px)}.simple-features{grid-template-columns:1fr;gap:5px;margin-top:20px}.simple-features article{border-right:0;border-bottom:1px solid #e3e8e2;padding:15px}.simple-features article:last-child{border:0}}
