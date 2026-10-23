@@ -5,7 +5,7 @@ import {useAuth} from '../contexts/AuthContext';
 export default function Login(){
  const [searchParams,setSearchParams]=useSearchParams();
  const [mode,setMode]=useState(()=>['register','forgot'].includes(searchParams.get('mode'))?searchParams.get('mode'):'login'),[f,setF]=useState({name:'',email:'',password:''}),[msg,setMsg]=useState(''),[busy,setBusy]=useState(false);
- useEffect(()=>{setMode(searchParams.get('mode')==='register'?'register':'login');},[searchParams]);
+ useEffect(()=>{setMode(['register','forgot'].includes(searchParams.get('mode'))?searchParams.get('mode'):'login');},[searchParams]);
  const {user,loading}=useAuth();const location=useLocation();
  function switchMode(next){setMode(next);setMsg('');setSearchParams(next==='register'?{mode:'register'}:next==='forgot'?{mode:'forgot'}:{},{replace:true});}
  const from=location.state?.from;const destination=typeof from==='string'&&from.startsWith('/')&&!from.startsWith('//')&&!from.startsWith('/login')?from:'/dashboard';
