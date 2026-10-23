@@ -4,11 +4,17 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
+
+# Avoid overlapping deployments for rapid successive commits.
+concurrency:
+  group: psctaiyari-production-deploy
+  cancel-in-progress: false
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
+    timeout-minutes: 20
     steps:
       - name: Update VPS and build website
         uses: appleboy/ssh-action@v1.2.2
@@ -16,14 +22,18 @@ jobs:
           host: ${{ secrets.VPS_HOST }}
           username: myadmin
           key: ${{ secrets.VPS_SSH_KEY }}
+          command_timeout: 15m
           script: |
-            set -e
+            set -eu
+            # The VPS-side lock protects against overlapping remote processes,
+            # including SSH runs left running after a cancelled workflow.
+            flock -w 600 /tmp/psctaiyari-deploy.lock bash -se <<'DEPLOY'
+            set -eu
             cd /home/myadmin/psctaiyari
-            # The VPS is a deployment copy; GitHub main is the source of truth.
-            # This avoids failed pulls when an old local commit exists on the VPS.
             git fetch origin main
             git reset --hard origin/main
-            # Remove stale dependency files to avoid npm ENOTEMPTY failures.
             rm -rf node_modules
-            npm ci
+            # Use a fresh dedicated cache to avoid stale/corrupted npm tarballs.
+            npm ci --cache /tmp/psctaiyari-npm-cache --prefer-online --no-audit --no-fund
             npm run build
+            DEPLOY
