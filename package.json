@@ -10,19 +10,20 @@
     "android:sync": "npm run build && npx cap sync android",
     "android:open": "npx cap open android",
     "android:debug": "npm run android:sync && cd android && ./gradlew assembleDebug",
-    "check": "node verification/config.mjs && node verification/csv.mjs && node verification/guards.mjs && node verification/admin-users.mjs && node verification/nasu.mjs && node verification/scroll-quiz.mjs && npm run verify:android",
+    "check": "node verification/config.mjs && node verification/csv.mjs && node verification/guards.mjs && node verification/admin-users.mjs && node verification/nasu.mjs && node verification/scroll-quiz.mjs && node verification/android-back.mjs && npm run verify:android",
     "verify:android": "node android-support/verify-play.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.3",
+    "@capacitor/app": "8.1.2",
+    "@capacitor/browser": "^8.0.0",
     "@capacitor/core": "^8.5.3",
     "@supabase/supabase-js": "2.58.0",
     "lucide-react": "0.468.0",
+    "mammoth": "^1.10.0",
     "react": "18.3.1",
     "react-dom": "18.3.1",
-    "react-router-dom": "7.9.4",
-    "mammoth": "^1.10.0",
-    "@capacitor/browser": "^8.0.0"
+    "react-router-dom": "7.9.4"
   },
   "devDependencies": {
     "@capacitor/cli": "^8.5.3",
