@@ -1,16 +1,32 @@
 import {useEffect,useState} from 'react';
+import {Link} from 'react-router-dom';
+import {BookOpen,ArrowRight,CheckCircle2,ClipboardCheck,RotateCcw,Orbit} from 'lucide-react';
 import {supabase} from '../lib/supabase';
 import {useAuth} from '../contexts/AuthContext';
-import {Link} from 'react-router-dom';
-import {BookOpen,ArrowRight} from 'lucide-react';
 import {CourseCards} from './AndroidCourses';
-export default function Dashboard(){
- const {profile,user}=useAuth();const [attempts,setAttempts]=useState([]),[sub,setSub]=useState(null),[loading,setLoading]=useState(true),[error,setError]=useState('');
- useEffect(()=>{let alive=true;if(!user)return;setLoading(true);setError('');Promise.all([
-  supabase.from('attempts').select('*').eq('user_id',user.id).eq('status','completed').order('started_at',{ascending:false}).limit(8),
-  supabase.from('subscriptions').select('*,plans(*)').eq('user_id',user.id).eq('status','active').gt('expires_at',new Date().toISOString()).order('expires_at',{ascending:false}).limit(1).maybeSingle()
- ]).then(([a,s])=>{if(!alive)return;if(a.error||s.error)throw a.error||s.error;setAttempts(a.data||[]);setSub(s.data);}).catch(e=>{if(alive)setError(e.message);}).finally(()=>{if(alive)setLoading(false);});return()=>{alive=false;};},[user]);
- const average=attempts.length?Math.round(attempts.reduce((s,x)=>s+Number(x.percentage||0),0)/attempts.length):null;
- return <><div className="pagehead"><div><h1>नमस्ते, {profile?.full_name||'विद्यार्थी'} 👋</h1><p className="muted">आजको सानो प्रयासले भोलिको सफलताको आधार बनाउँछ।</p></div></div><section className="learning-hero"><div><p className="eyebrow">YOUR NEXT CHAPTER</p><h2>तयारीलाई दिनुहोस्<br/>एउटा स्पष्ट दिशा।</h2><p>पाठ पढ्नुहोस्, अभ्यास गर्नुहोस् र आफ्नो प्रगति हेर्नुहोस्।<br/>तपाईंको लोकसेवा तयारी — एउटै ठाउँमा।</p><Link className="btn light" to="/courses">अध्ययन जारी राख्नुहोस् <ArrowRight size={17}/></Link></div><BookOpen className="hero-illustration" aria-hidden="true"/></section>{error&&<p className="notice" role="alert">{error}</p>}<div className="grid4 dashboard-stats" aria-busy={loading}><Stat n={loading||error?'—':attempts.length} t="पछिल्ला पूरा भएका परीक्षा" detail="पछिल्ला ८ प्रयाससम्म"/><Stat n={loading||error||average===null?'—':`${average}%`} t="औसत प्राप्ताङ्क" detail="पछिल्ला प्रयासका आधारमा"/><Stat n={loading||error?'—':sub?.plans?.name||'Free'} t="हालको सदस्यता" detail="तपाईंको अध्ययन योजना"/><Stat n={loading||error?'—':sub?new Date(sub.expires_at).toLocaleDateString():'—'} t="सदस्यता समाप्ति" detail="सक्रिय योजनाको अवधि"/></div><div className="dashboard-columns"><section><div className="section-heading"><h2>आफ्नो सिकाइ अगाडि बढाउनुहोस्</h2><Link to="/courses">सबै हेर्नुहोस् →</Link></div><CourseCards limit={2}/></section><section className="card study-plan"><p className="eyebrow">MAKE IT A HABIT</p><h2>आजको अध्ययन योजना</h2><div className="plan-step"><span>STEP<b>01</b></span><div><h3>एक पाठ अध्ययन</h3><p className="muted">आफ्नो गतिमा सिक्नुहोस्</p></div><Link to="/materials" aria-label="अध्ययन सामग्री खोल्नुहोस्">→</Link></div><div className="plan-step"><span>STEP<b>02</b></span><div><h3>आफैँलाई परीक्षण</h3><p className="muted">अभ्यास र mock tests</p></div><Link to="/tests" aria-label="अभ्यास खोल्नुहोस्">→</Link></div><p className="notice">अभ्यास टिप: उत्तर हेर्नुअघि आफैँ प्रयास गर्नुहोस्। गल्ती भएका प्रश्न दोहोर्‍याएर पढ्नुहोस्।</p></section></div><section className="card recent-performance"><h2>पछिल्लो अभ्यास</h2>{loading?<p role="status">नतिजा लोड हुँदैछ…</p>:error?<p>नतिजा अहिले उपलब्ध छैन। फेरि पेज खोल्नुहोस्।</p>:!attempts.length?<p className="muted">अहिलेसम्म परीक्षा पूरा भएको छैन। <Link to="/tests">अभ्यास सुरु गर्नुहोस् →</Link></p>:attempts.map(x=><div className="row" key={x.id}><span className="grow">{new Date(x.started_at).toLocaleDateString()}</span><b>{x.percentage}%</b><span>{x.correct_answers}/{x.total_questions} सही</span><Link to={`/result/${x.id}`}>नतिजा →</Link></div>)}</section></>;
+
+export default function AndroidDashboard(){
+ const {profile,user}=useAuth();
+ const [recent,setRecent]=useState([]),[attempts,setAttempts]=useState([]),[loading,setLoading]=useState(true),[error,setError]=useState(''),[retry,setRetry]=useState(0);
+ useEffect(()=>{let alive=true;setLoading(true);setError('');
+ Promise.all([
+  supabase.from('lesson_progress').select('lesson_id,status,updated_at,lessons(title_ne)').eq('user_id',user.id).order('updated_at',{ascending:false}).limit(8),
+  supabase.from('attempts').select('id,percentage,correct_answers,total_questions,started_at').eq('user_id',user.id).eq('status','completed').order('started_at',{ascending:false}).limit(8)
+ ]).then(([l,a])=>{if(!alive)return;if(l.error||a.error)throw l.error||a.error;setRecent(l.data||[]);setAttempts(a.data||[]);}).catch(e=>{if(alive)setError(e.message);}).finally(()=>{if(alive)setLoading(false);});return()=>{alive=false;};},[user.id,retry]);
+ const next=recent.find(l=>l.lessons&&l.status!=='completed'),destination=next?`/lessons/${next.lesson_id}`:'/courses';
+ const today=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Kathmandu'}).format(new Date());
+ const isToday=value=>value&&new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Kathmandu'}).format(new Date(value))===today;
+ const readToday=recent.some(l=>l.status==='completed'&&isToday(l.updated_at)),practisedToday=attempts.some(a=>isToday(a.started_at));
+ return <div className="study-workspace">
+  <div className="pagehead"><div><p className="eyebrow">आजको पढाइ</p><h1>नमस्ते, {profile?.full_name||'विद्यार्थी'} 👋</h1><p className="muted">पढ्नुहोस्, अभ्यास गर्नुहोस् र हरेक दिन अगाडि बढ्नुहोस्।</p></div></div>
+  {error&&<div className="notice" role="alert">प्रगति लोड भएन: {error} <button className="textbtn" onClick={()=>setRetry(n=>n+1)}>फेरि प्रयास</button></div>}
+  <section className="continue-card" aria-busy={loading}><div><p className="eyebrow">तपाईंको अध्ययन यात्रा</p><h2>{next?'जहाँ छोड्नुभयो, त्यहीँबाट':'एकाइबाट पढाइ सुरु गर्नुहोस्'}</h2><p>{loading?'पछिल्लो पाठ खोज्दैछ…':next?.lessons.title_ne||'पाठ्यक्रम छान्नुहोस् र पहिलो पाठबाट अगाडि बढ्नुहोस्।'}</p></div><Orbit className="orbit-icon" size={76} aria-hidden="true"/><Link className="btn" to={destination}>{next?'पढाइ जारी राख्नुहोस्':'पाठ्यक्रम हेर्नुहोस्'} <ArrowRight size={18}/></Link></section>
+  <section className="card daily-plan"><h2>आजको पढाइ · दैनिक चेकलिस्ट</h2><p className="muted">पाठ → अभ्यास → पुनरावृत्ति</p>{[
+   [BookOpen,'एक पाठ पढ्नुहोस्','आफ्नै गतिमा विषय बुझ्नुहोस्',destination,readToday],
+   [ClipboardCheck,'MCQ अभ्यास गर्नुहोस्','पढेको कुरा आफैँ जाँच्नुहोस्','/tests',practisedToday],
+   [RotateCcw,'गल्ती दोहोर्‍याउनुहोस्','पछिल्ला नतिजा र व्याख्या हेर्नुहोस्','/review',false]
+  ].map(([Icon,title,detail,to,done])=><Link className="daily-step" key={to} to={to}><Icon size={23}/><span><strong>{title}</strong><small>{detail}</small></span>{done?<CheckCircle2 size={21} aria-label="आज पूरा भयो"/>:<ArrowRight size={18}/>}</Link>)}</section>
+  <div className="section-heading"><h2>आफ्नो पाठ्यक्रम</h2><Link to="/courses">सबै हेर्नुहोस् →</Link></div><CourseCards limit={2}/>
+  <section className="card recent-performance"><div className="section-heading"><h2>पछिल्लो अभ्यास</h2><Link to="/progress">मेरो प्रगति →</Link></div>{loading?<p role="status">नतिजा लोड हुँदैछ…</p>:error?<p>नतिजा अहिले उपलब्ध छैन।</p>:attempts.length?attempts.map(a=><Link className="daily-step" key={a.id} to={`/result/${a.id}`}><ClipboardCheck size={21}/><span><strong>{a.correct_answers}/{a.total_questions} सही</strong><small>{new Date(a.started_at).toLocaleDateString('ne-NP')}</small></span><b>{Math.round(Number(a.percentage)||0)}%</b></Link>):<p className="muted">अभ्यास पूरा गरेपछि नतिजा यहाँ देखिन्छ।</p>}</section>
+ </div>;
 }
-function Stat({n,t,detail}){return <div className="stat"><span>{t}</span><strong>{n}</strong><small>{detail}</small></div>}
