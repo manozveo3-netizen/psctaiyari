@@ -1,13 +1,14 @@
 // Use router history only when it belongs to this app session. A deep link or
 // reloaded inner page may have no previous entry; return home instead of exiting.
-export function installAndroidBackHandler({app,getRoute,navigate,getHistoryState=()=>window.history.state,onError=console.error}){
+export function installAndroidBackHandler({app,getRoute,navigate,getHistoryState=()=>window.history.state,confirmExit=()=>window.confirm('PSC Taiyari बन्द गर्ने?'),onError=console.error}){
  let active=true;
  const listener=app.addListener('backButton',({canGoBack})=>{
   if(!active)return;
   const {pathname,home}=getRoute();
   const path=pathname.replace(/\/+$/,'')||'/';
   if(path==='/'||path===home){
-   app.exitApp().catch(onError);
+   // Do not let a single accidental press close a study session.
+   if(confirmExit()) app.exitApp().catch(onError);
    return;
   }
   const index=getHistoryState()?.idx;
