@@ -46,3 +46,16 @@ The course card, dashboard course card and course details contain a Buy button *
 - `/website-support` is an administrative/support-only app page. Its outbound link opens dedicated standalone `https://psctaiyari.com/app-support.html` served from `main:public/app-support.html` with no checkout links or site purchase navigation.
 - Keep the standalone help page non-commercial. If someone later adds pricing or payment navigation there, remove its outbound link from the Play build immediately; Google says even admin/help URLs must not eventually lead to disallowed alternative digital payments.
 - Direct-distribution APK outside Play retains its separately gated website Buy button. **Never upload this APK to Google Play.**
+
+### Branded launcher icon
+
+The approved image is preserved in `android-support/branding/launcher-source.jpg`.
+Legacy, round and adaptive icon resources live in `android-support/launcher-res`.
+The `capacitor:sync:after` hook installs and verifies these resources after every
+`npx cap sync android`, including all APK and AAB workflows, so a freshly generated
+Android project does not ship the Capacitor default icon.
+
+To regenerate after replacing the approved image, run
+`python android-support/branding/generate-icons.py` with Pillow installed and commit
+the resulting PNGs. CI uses the committed PNGs and needs no image-generation dependency.
+Install a newly built APK to see the changed launcher icon on a device.

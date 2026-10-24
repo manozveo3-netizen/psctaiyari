@@ -10,8 +10,9 @@
     "android:sync": "npm run build && npx cap sync android",
     "android:open": "npx cap open android",
     "android:debug": "npm run android:sync && cd android && ./gradlew assembleDebug",
-    "check": "node verification/config.mjs && node verification/csv.mjs && node verification/guards.mjs && node verification/admin-users.mjs && node verification/nasu.mjs && node verification/scroll-quiz.mjs && node verification/android-back.mjs && npm run verify:android",
-    "verify:android": "node android-support/verify-play.mjs"
+    "check": "node verification/config.mjs && node verification/csv.mjs && node verification/guards.mjs && node verification/admin-users.mjs && node verification/nasu.mjs && node verification/scroll-quiz.mjs && node verification/android-back.mjs && node verification/android-icons.mjs && npm run verify:android",
+    "verify:android": "node android-support/verify-play.mjs",
+    "capacitor:sync:after": "node android-support/install-icons.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.3",
