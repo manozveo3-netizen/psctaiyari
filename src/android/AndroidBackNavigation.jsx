@@ -17,7 +17,8 @@ export default function AndroidBackNavigation(){
   return installAndroidBackHandler({
    app:NativeApp,
    getRoute:()=>current.current,
-   navigate:(...args)=>current.current.navigate(...args)
+   navigate:(...args)=>current.current.navigate(...args),
+   confirmExit:()=>window.confirm('PSC Taiyari बन्द गर्ने?')
   });
  },[]);
  return null;
