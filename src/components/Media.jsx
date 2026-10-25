@@ -4,10 +4,15 @@ export function Resource({resource,onPosition,onComplete,resume=0}){
  const [url,setUrl]=useState(''),[docxHtml,setDocxHtml]=useState(''),[error,setError]=useState('');
  const kind=resource.material_type||resource.kind;
  useEffect(()=>{let active=true;setUrl('');setDocxHtml('');setError('');let timer;
- async function load(){try{if(resource.external_url){if(!resource.external_url.startsWith('https://'))throw Error('Invalid resource URL');if(active)setUrl(resource.external_url);return;}
+ async function load(){try{
+  // Rich text is stored directly in the database, so it has no Storage bucket/path.
+  // Avoid calling Supabase Storage with null values.
+  if(kind==='rich_text')return;
+  if(resource.external_url){if(!resource.external_url.startsWith('https://'))throw Error('Invalid resource URL');if(active)setUrl(resource.external_url);return;}
+  if(!resource.storage_bucket||!resource.storage_path)throw Error('सामग्रीको file location उपलब्ध छैन।');
  const {data,error}=await supabase.storage.from(resource.storage_bucket).createSignedUrl(resource.storage_path,3600);if(error)throw error;if(active)setUrl(data.signedUrl);
  }catch(e){if(active)setError(e.message);}}
- load();timer=setInterval(load,50*60*1000);return()=>{active=false;clearInterval(timer);};},[resource.external_url,resource.storage_bucket,resource.storage_path]);
+ load();if(kind!=='rich_text')timer=setInterval(load,50*60*1000);return()=>{active=false;clearInterval(timer);};},[kind,resource.external_url,resource.storage_bucket,resource.storage_path]);
  useEffect(()=>{let active=true;if(kind!=='docx'||!url)return;import('mammoth').then(async({default:mammoth})=>{const response=await fetch(url);if(!response.ok)throw Error('DOCX file खोल्न सकेन।');const result=await mammoth.convertToHtml({arrayBuffer:await response.arrayBuffer()});if(active)setDocxHtml(result.value);}).catch(e=>active&&setError(e.message));return()=>{active=false};},[kind,url]);
  if(error)return <p role="alert">सामग्री खोल्न सकेन: {error}</p>;
  if(kind==='rich_text')return <div className="lesson-notes">{resource.content_html}</div>;
