@@ -5,12 +5,12 @@ import {App as NativeApp} from '@capacitor/app';
 import {useAuth} from '../contexts/AuthContext';
 import {installAndroidBackHandler} from './backNavigation';
 
-// Mounted outside App so Back is handled during its welcome splash as well.
+// Mounted outside App so Android Back is also handled before login.
 export default function AndroidBackNavigation(){
  const location=useLocation(),navigate=useNavigate(),{user}=useAuth();
- const current=useRef({pathname:location.pathname,home:user?'/dashboard':'/',navigate});
+ const current=useRef({pathname:location.pathname,home:user?'/dashboard':'/login',navigate});
  useLayoutEffect(()=>{
-  current.current={pathname:location.pathname,home:user?'/dashboard':'/',navigate};
+  current.current={pathname:location.pathname,home:user?'/dashboard':'/login',navigate};
  },[location.pathname,navigate,user?.id]);
  useEffect(()=>{
   if(Capacitor.getPlatform()!=='android')return;
@@ -18,7 +18,7 @@ export default function AndroidBackNavigation(){
    app:NativeApp,
    getRoute:()=>current.current,
    navigate:(...args)=>current.current.navigate(...args),
-   confirmExit:()=>window.confirm('PSC Taiyari बन्द गर्ने?')
+   confirmExit:()=>window.confirm('Are you sure you want to exit PSC Taiyari?')
   });
  },[]);
  return null;
