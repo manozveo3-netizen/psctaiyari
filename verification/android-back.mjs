@@ -22,13 +22,15 @@ state={idx:5};back({canGoBack:false});assert.deepEqual(calls.pop(),['/dashboard'
 for(const pathname of ['/dashboard','/dashboard/','/']){
  route.pathname=pathname;back({canGoBack:true});assert.notEqual(calls.at(-1),'exit');
 }
-allowExit=true;route.pathname='/dashboard';back({canGoBack:true});assert.equal(calls.pop(),'exit');allowExit=false;
-route={pathname:'/login',home:'/'};state=null;back({canGoBack:false});assert.deepEqual(calls.pop(),['/',{replace:true}]);
-route.pathname='/';back({canGoBack:false});assert.notEqual(calls.at(-1),'exit');
+allowExit=true;route.pathname='/dashboard';back({canGoBack:true});assert.equal(calls.pop(),'exit');
+allowExit=false;route={pathname:'/login',home:'/login'};state=null;back({canGoBack:false});assert.equal(calls.length,0,'Login asks before exit and remains open when cancelled');
+allowExit=true;back({canGoBack:false});assert.equal(calls.pop(),'exit','Login exits only after confirmation');
 cleanup();route.pathname='/';back({canGoBack:false});assert.equal(calls.length,0);
 resolveHandle({remove:async()=>{removed++;}});await new Promise(resolve=>setImmediate(resolve));assert.equal(removed,1);assert.deepEqual(errors,[]);
 const entry=readFileSync('src/main.jsx','utf8');
 assert.ok(entry.includes('<AuthProvider><AndroidBackNavigation/><App/>'),'Install before the welcome splash');
-assert.equal(readFileSync('src/android/AndroidBackNavigation.jsx','utf8').includes("Capacitor.getPlatform()!=='android'"),true,'Do not intercept web/iOS back');
+const handler=readFileSync('src/android/AndroidBackNavigation.jsx','utf8');
+assert.equal(handler.includes("home:user?'/dashboard':'/login'"),true,'Login screen is the unauthenticated exit screen');
+assert.ok(handler.includes('Are you sure you want to exit PSC Taiyari?'),'Show exit confirmation before login');
 assert.ok(JSON.parse(readFileSync('package.json','utf8')).dependencies['@capacitor/app']);
-console.log('PASS: Android Back returns through router history, deep links fall back home, home requires confirmation, sign-out and async listener cleanup');
+console.log('PASS: Android Back preserves study navigation, exits from Home, and confirms exit from Login');
