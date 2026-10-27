@@ -61,4 +61,8 @@ body{line-height:1.6}h1,h2,h3{line-height:1.5;overflow-wrap:anywhere}h2{font-siz
 .performance-units{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:.7rem}
 .performance-units>div{padding:.7rem .8rem;border:1px solid #dfeadb;border-radius:8px;background:#fff}
 .performance-units b,.performance-units span{display:block}.performance-units span{font-size:.82rem;color:#526e49;margin-top:.22rem}
+.quiz-builder>.performance-summary{display:none}
+.ai-summary{margin:0 0 18px;background:#f7fbf4;border-color:#d8e7d3}.ai-summary h2{margin:.2rem 0}.ai-summary p{margin-bottom:0}
+.performance-table{display:grid;gap:0}.performance-table>div{display:grid;grid-template-columns:minmax(160px,1fr) 110px 150px 75px;gap:12px;align-items:center;padding:13px 0;border-bottom:1px solid var(--line)}.performance-table>div:last-child{border:0}.performance-table span{color:var(--muted);font-size:.9rem}
+@media(max-width:650px){.performance-table>div{grid-template-columns:1fr 1fr;gap:4px 10px}.performance-table b{grid-column:1/-1}}
 @media (max-width:700px){.quiz-picker-heading{flex-direction:column}.quiz-show-action .btn{width:100%}}
