@@ -54,8 +54,10 @@ body{line-height:1.6}h1,h2,h3{line-height:1.5;overflow-wrap:anywhere}h2{font-siz
 .quiz-practice .options button.correct em{color:#15803d}
 .quiz-practice .options button.wrong em{color:#dc2626}
 .quiz-score{background:#f8fbf6;border-color:#d8e7d3}
-.performance-summary{margin-bottom:1.25rem;background:#f7fbf4;border-color:#d8e7d3}
-.performance-summary h2{margin:.1rem 0 .55rem}.performance-summary p{margin:.35rem 0 1rem}
+.quiz-builder{display:flex;flex-direction:column}
+.performance-summary{order:99;margin-top:1.25rem;background:#f7fbf4;border-color:#d8e7d3}
+.performance-summary h2{margin:.1rem 0 .55rem;font-size:0}.performance-summary h2::after{content:'Performance Summary';font-size:20px}
+.performance-summary p{margin:.35rem 0 1rem}
 .performance-units{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:.7rem}
 .performance-units>div{padding:.7rem .8rem;border:1px solid #dfeadb;border-radius:8px;background:#fff}
 .performance-units b,.performance-units span{display:block}.performance-units span{font-size:.82rem;color:#526e49;margin-top:.22rem}
