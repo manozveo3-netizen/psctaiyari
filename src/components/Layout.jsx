@@ -1,7 +1,7 @@
 import {Link,NavLink,Outlet,useLocation} from 'react-router-dom';
 import {useAuth} from '../contexts/AuthContext';
-import {BookOpen,LayoutDashboard,LogOut,Shield,BarChart3,CreditCard,Clock,Library} from 'lucide-react';
-const links=[['/dashboard',LayoutDashboard,'Dashboard'],['/courses',BookOpen,'My Courses'],['/tests',Clock,'Mock tests'],['/materials',Library,'Learning materials'],['/progress',BarChart3,'मेरो प्रगति'],['/pricing',CreditCard,'सदस्यता']];
+import {BookOpen,LayoutDashboard,LogOut,Shield,BarChart3,CreditCard,Clock,Library,CircleHelp} from 'lucide-react';
+const links=[['/dashboard',LayoutDashboard,'Dashboard'],['/courses',BookOpen,'My Courses'],['/quizzes',CircleHelp,'Quizzes'],['/tests',Clock,'Mock tests'],['/materials',Library,'Learning materials'],['/progress',BarChart3,'मेरो प्रगति'],['/pricing',CreditCard,'सदस्यता']];
 export default function Layout(){
  const {user,profile,signOut}=useAuth();const location=useLocation();
  const title=links.find(([path])=>location.pathname.startsWith(path))?.[2]||'Learning workspace';
