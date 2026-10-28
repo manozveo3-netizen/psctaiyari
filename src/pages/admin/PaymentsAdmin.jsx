@@ -4,7 +4,7 @@ import {useAuth} from '../../contexts/AuthContext';
 
 export default function PaymentsAdmin(){
  const {profile}=useAuth();
- const [payments,setPayments]=useState([]);
+ const [payments,setPayments]=useState([]);const [coursePayments,setCoursePayments]=useState([]);
  const [busy,setBusy]=useState(false);
  const [message,setMessage]=useState('');
  const [proofUrl,setProofUrl]=useState(null);
@@ -13,7 +13,7 @@ export default function PaymentsAdmin(){
    const {data,error}=await supabase.from('payments')
      .select('id,user_id,plan_id,amount_npr,status,transaction_id,screenshot_path,submitted_at,rejection_reason,plans(name,duration_days)')
      .order('submitted_at',{ascending:false}).limit(300);
-   if(error)setMessage(error.message);else setPayments(data||[]);
+   if(error)setMessage(error.message);else setPayments(data||[]);const c=await supabase.from('course_purchase_requests').select('id,user_id,course_id,amount_npr,status,transaction_id,screenshot_path,submitted_at,rejection_reason,courses(title_ne)').order('submitted_at',{ascending:false}).limit(300);if(c.error)setMessage(c.error.message);else setCoursePayments(c.data||[]);
  }
  useEffect(()=>{load();},[]);
  async function showProof(row){
@@ -22,6 +22,7 @@ export default function PaymentsAdmin(){
    if(error)setMessage('Screenshot खोल्न सकिएन: '+error.message);
    else{setProofUrl(data.signedUrl);setProofId(row.id);}
  }
+ async function processCourse(row,approve){if(busy||profile?.role!=='admin')return;const reason=approve?null:window.prompt('Reject गर्ने कारण?');if(!approve&&!reason?.trim())return;if(approve&&!window.confirm('Bank/wallet statement मा रकम Rs. '+row.amount_npr+' र Transaction ID '+row.transaction_id+' प्रमाणित गर्नुभयो?'))return;setBusy(true);setMessage('');try{const {error}=await supabase.rpc('review_course_purchase',{p_request_id:row.id,p_approve:approve,p_reason:reason});if(error)throw error;setMessage(approve?'Course payment approved; access granted.':'Course payment rejected.');await load()}catch(e){setMessage(e.message)}finally{setBusy(false)}}
  async function process(row,action){
    if(busy||profile?.role!=='admin')return;
    const reason=action==='reject'?window.prompt('Payment reject गर्ने कारण?'):null;
@@ -42,7 +43,7 @@ export default function PaymentsAdmin(){
    <p>पहिले बैंक/वालेटको वास्तविक incoming transaction र amount verify गर्नुहोस्। Screenshot वा Transaction ID मात्रै पर्याप्त छैन।</p>
    <button type="button" onClick={load} disabled={busy}>Refresh Payments</button>
    {message&&<p className="notice" role="status">{message}</p>}
-   <div style={{overflowX:'auto'}}><table>
+   <h3>Course Purchases</h3><div style={{overflowX:'auto'}}><table><thead><tr><th>Student ID</th><th>Course</th><th>Amount</th><th>Transaction ID</th><th>Status</th><th>Payment Slip</th><th>Action</th></tr></thead><tbody>{coursePayments.map(p=><tr key={p.id}><td><small>{p.user_id}</small></td><td>{p.courses?.title_ne}</td><td>Rs. {p.amount_npr}</td><td>{p.transaction_id}</td><td>{p.status}{p.rejection_reason&&<small>{p.rejection_reason}</small>}</td><td>{p.screenshot_path?<button onClick={()=>showProof(p)}>View slip</button>:'—'}</td><td>{p.status==='pending'&&profile?.role==='admin'&&<><button disabled={busy} onClick={()=>processCourse(p,true)}>Approve</button> <button className="danger" disabled={busy} onClick={()=>processCourse(p,false)}>Reject</button></>}</td></tr>)}</tbody></table></div><h3>Previous Subscription Payments</h3><div style={{overflowX:'auto'}}><table>
      <thead><tr><th>Student ID</th><th>Plan</th><th>Amount</th><th>Transaction ID</th><th>Status</th><th>Proof</th><th>Action</th></tr></thead>
      <tbody>{payments.map(p=><tr key={p.id}>
        <td><small>{p.user_id}</small></td>
