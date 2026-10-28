@@ -10,19 +10,21 @@ export default function MyCourseLearning(){
  if(e.error)throw e.error;
  if(!e.data||e.data.expires_at&&new Date(e.data.expires_at)<=new Date())throw Error('यो course अध्ययन गर्ने पहुँच छैन।');
  const c=await supabase.from('courses').select('id,title_ne,description,status').eq('id',id).eq('status','published').single();if(c.error)throw c.error;
- const u=await supabase.from('learning_units').select('*').eq('course_id',id).eq('status','published').order('sort_order');if(u.error)throw u.error;
+ let unitQuery=supabase.from('learning_units').select('*').eq('course_id',id).eq('status','published');
+ if(focusUnit)unitQuery=unitQuery.eq('id',focusUnit);
+ const u=await unitQuery.order('sort_order');if(u.error)throw u.error;
  let s=[],z=[],m=[];
  if(u.data.length){const a=await supabase.from('learning_sub_units').select('*').in('unit_id',u.data.map(x=>x.id)).eq('status','published').order('sort_order');if(a.error)throw a.error;s=a.data||[];}
  if(s.length){const a=await supabase.from('learning_sub_sub_units').select('*').in('sub_unit_id',s.map(x=>x.id)).eq('status','published').order('sort_order');if(a.error)throw a.error;z=a.data||[];}
  if(z.length){const a=await supabase.from('learning_materials').select('*').in('sub_sub_unit_id',z.map(x=>x.id)).eq('status','published').order('sort_order');if(a.error)throw a.error;m=a.data||[];}
  if(m.length){const pr=await supabase.from('student_material_progress').select('material_id').eq('user_id',user.id).in('material_id',m.map(x=>x.id));if(pr.error)throw pr.error;if(active)setCompleted((pr.data||[]).map(x=>x.material_id))}
  if(active){setAllowed(true);setCourse(c.data);setUnits(u.data||[]);setSubs(s);setSubsubs(z);setMaterials(m)}
- }catch(e){if(active)setError(e.message)}finally{if(active)setLoading(false)}})();return()=>{active=false}},[id,user?.id]);
+ }catch(e){if(active)setError(e.message)}finally{if(active)setLoading(false)}})();return()=>{active=false}},[id,user?.id,focusUnit]);
  async function markComplete(materialId){setSaving(materialId);setError('');try{const r=await supabase.from('student_material_progress').upsert({user_id:user.id,material_id:materialId},{onConflict:'user_id,material_id',ignoreDuplicates:true});if(r.error)throw r.error;setCompleted(x=>x.includes(materialId)?x:[...x,materialId])}catch(e){setError(e.message)}finally{setSaving('')}}
  if(loading)return <p role="status">पाठ्यक्रम लोड हुँदैछ…</p>;
  if(!allowed)return <div className="card"><p className="notice">{error}</p><Link to="/my-courses">← My Courses</Link></div>;
  return <section><Link to="/my-courses">← My Courses</Link><h1>{course.title_ne}</h1><p>{course.description}</p>{error&&<p className="notice" role="alert">{error}</p>}
- {!units.length&&<p className="card">अध्ययन सामग्री तयारीमा छ।</p>}
+ {!units.length&&<p className="card">{focusUnit?'छानिएको Unit को प्रकाशित अध्ययन सामग्री उपलब्ध छैन।':'अध्ययन सामग्री तयारीमा छ।'}</p>}
  {units.map(u=><section className="card" key={u.id} id={u.id} style={{outline:focusUnit===u.id?"2px solid #205D4D":undefined}}><h2>{u.code&&u.code+' · '}{u.title_ne}</h2>{subs.filter(s=>s.unit_id===u.id).map(s=><details className="content-details" key={s.id}><summary>{s.code&&s.code+' · '}{s.title_ne}</summary>{subsubs.filter(z=>z.sub_unit_id===s.id).map(z=><details className="content-details" key={z.id}><summary>{z.code&&z.code+' · '}{z.title_ne}</summary>{materials.filter(m=>m.sub_sub_unit_id===z.id).map(m=><article className="material-preview" key={m.id}><h3>{m.title_ne}</h3>{m.description&&<p>{m.description}</p>}<Resource resource={m}/><button className="btn ghost" type="button" disabled={completed.includes(m.id)||saving===m.id} onClick={()=>markComplete(m.id)}>{completed.includes(m.id)?'✓ अध्ययन पूरा भयो':'Mark as Complete'}</button></article>)}</details>)}</details>)}</section>)}
  </section>;
 }
