@@ -1,4 +1,5 @@
 import {useEffect,useMemo,useRef,useState} from 'react';
+import {useSearchParams} from 'react-router-dom';
 import {supabase} from '../lib/supabase';
 import {useAuth} from '../contexts/AuthContext';
 
@@ -6,10 +7,10 @@ const name=x=>x?.name_ne||x?.name_en||'—';
 const shuffle=x=>[...x].sort(()=>Math.random()-.5);
 
 export default function Quizzes(){
- const {user}=useAuth();const [courses,setCourses]=useState([]),[units,setUnits]=useState([]),[subjects,setSubjects]=useState([]),[topics,setTopics]=useState([]);
+ const {user}=useAuth();const [searchParams]=useSearchParams();const [courses,setCourses]=useState([]),[units,setUnits]=useState([]),[subjects,setSubjects]=useState([]),[topics,setTopics]=useState([]);
  const [courseId,setCourseId]=useState(''),[subjectId,setSubjectId]=useState(''),[topicId,setTopicId]=useState(''),[count,setCount]=useState(10),[available,setAvailable]=useState(0);
  const [questions,setQuestions]=useState([]),[answers,setAnswers]=useState({}),[seconds,setSeconds]=useState(0),[submitted,setSubmitted]=useState(false),[score,setScore]=useState(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[attempts,setAttempts]=useState([]);const auto=useRef(false);
- useEffect(()=>{if(!user)return;(async()=>{const {data:e}=await supabase.from('course_enrollments').select('course_id').eq('user_id',user.id).neq('status','cancelled');const ids=[...new Set((e||[]).map(x=>x.course_id))];if(!ids.length)return;const [{data:c},{data:u}]=await Promise.all([supabase.from('courses').select('id,title_ne,title_en').in('id',ids).eq('status','published'),supabase.from('course_units').select('course_id,subject_id,topic_id').in('course_id',ids).eq('status','published')]);const sids=[...new Set((u||[]).map(x=>x.subject_id).filter(Boolean))];const [{data:s},{data:t}]=await Promise.all([supabase.from('subjects').select('id,name_ne,name_en').in('id',sids).eq('active',true),supabase.from('topics').select('id,subject_id,name_ne,name_en').in('subject_id',sids).eq('active',true)]);setCourses(c||[]);setUnits(u||[]);setSubjects(s||[]);setTopics(t||[])})()},[user]);
+ useEffect(()=>{if(!user)return;(async()=>{const {data:e}=await supabase.from('course_enrollments').select('course_id').eq('user_id',user.id).neq('status','cancelled');const ids=[...new Set((e||[]).map(x=>x.course_id))];if(!ids.length)return;const [{data:c},{data:u}]=await Promise.all([supabase.from('courses').select('id,title_ne,title_en').in('id',ids).eq('status','published'),supabase.from('course_units').select('course_id,subject_id,topic_id').in('course_id',ids).eq('status','published')]);const sids=[...new Set((u||[]).map(x=>x.subject_id).filter(Boolean))];const [{data:s},{data:t}]=await Promise.all([supabase.from('subjects').select('id,name_ne,name_en').in('id',sids).eq('active',true),supabase.from('topics').select('id,subject_id,name_ne,name_en').in('subject_id',sids).eq('active',true)]);setCourses(c||[]);if(searchParams.get('course')&&(c||[]).some(x=>x.id===searchParams.get('course')))setCourseId(searchParams.get('course'));setUnits(u||[]);setSubjects(s||[]);setTopics(t||[])})()},[user]);
  const loadAttempts=async()=>{if(!user)return;const {data,error:e}=await supabase.from('practice_attempts').select('subject_id,total_questions,correct_answers,time_spent_seconds,subjects(name_ne,name_en)').eq('user_id',user.id).order('completed_at',{ascending:false}).limit(100);if(e)setError(e.message);else setAttempts(data||[])};
  useEffect(()=>{loadAttempts()},[user]);
  const courseSubjects=useMemo(()=>{const ids=new Set(units.filter(x=>x.course_id===courseId).map(x=>x.subject_id));return subjects.filter(x=>ids.has(x.id))},[units,subjects,courseId]);
