@@ -1,7 +1,7 @@
 import {Link,NavLink,Outlet,useLocation} from 'react-router-dom';
 import {useAuth} from '../contexts/AuthContext';
 import {BookOpen,Home,LogOut,Shield,BarChart3,CreditCard,Clock,CircleHelp} from 'lucide-react';
-const links=[['/dashboard',Home,'घर'],['/courses',BookOpen,'पढाइ'],['/quizzes',CircleHelp,'अभ्यास'],['/tests',Clock,'Mock Test'],['/progress',BarChart3,'मेरो प्रगति'],['/pricing',CreditCard,'सदस्यता']];
+const links=[['/dashboard',Home,'घर'],['/courses',BookOpen,'Courses'],['/quizzes',CircleHelp,'अभ्यास'],['/tests',Clock,'Mock Test'],['/progress',BarChart3,'मेरो प्रगति'],['/pricing',CreditCard,'सदस्यता']];
 export default function Layout(){
  const {user,profile,signOut}=useAuth();const location=useLocation();
  const title=links.find(([path])=>location.pathname.startsWith(path))?.[2]||'घर';
