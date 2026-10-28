@@ -1,10 +1,10 @@
 import {useEffect,useState} from 'react';
-import {Link} from 'react-router-dom';
+import {Link,useSearchParams} from 'react-router-dom';
 import {BookOpen,ArrowRight} from 'lucide-react';
 import {supabase} from '../lib/supabase';
 import {useAuth} from '../contexts/AuthContext';
 export default function MyCourses(){
- const {user}=useAuth();const [selected,setSelected]=useState(''),[unitRows,setUnitRows]=useState([]),[unitLoading,setUnitLoading]=useState(false),[unitError,setUnitError]=useState(''),[courses,setCourses]=useState([]),[loading,setLoading]=useState(true),[error,setError]=useState('');
+ const {user}=useAuth();const [searchParams,setSearchParams]=useSearchParams();const [selected,setSelected]=useState(()=>searchParams.get('course')||''),[unitRows,setUnitRows]=useState([]),[unitLoading,setUnitLoading]=useState(false),[unitError,setUnitError]=useState(''),[courses,setCourses]=useState([]),[loading,setLoading]=useState(true),[error,setError]=useState('');
  useEffect(()=>{let active=true;(async()=>{setLoading(true);setError('');try{
  const {data:enrollments,error:enrollError}=await supabase.from('course_enrollments').select('course_id,enrolled_at').eq('user_id',user.id).eq('status','active').or('expires_at.is.null,expires_at.gt.'+new Date().toISOString());
  if(enrollError)throw enrollError;
@@ -14,7 +14,9 @@ export default function MyCourses(){
  if(error)throw error;
  if(active)setCourses(data||[]);
  }catch(e){if(active)setError(e.message)}finally{if(active)setLoading(false)}})();return()=>{active=false}},[user?.id]);
- useEffect(()=>{if(!selected)return;let active=true;(async()=>{setUnitLoading(true);setUnitError('');try{
+ useEffect(()=>{const courseId=searchParams.get('course')||'';setSelected(current=>current===courseId?current:courseId)},[searchParams]);
+ function toggleCourse(courseId){const next=selected===courseId?'':courseId;setSelected(next);setSearchParams(next?{course:next}:{})}
+ useEffect(()=>{if(!selected){setUnitRows([]);return}let active=true;(async()=>{setUnitLoading(true);setUnitError('');try{
  const u=await supabase.from('learning_units').select('id,code,title_ne,title_en,sort_order').eq('course_id',selected).eq('status','published').order('sort_order');if(u.error)throw u.error;
  const units=u.data||[];let subs=[],subsubs=[],materials=[],done=[];
  if(units.length){const q=await supabase.from('learning_sub_units').select('id,unit_id').in('unit_id',units.map(x=>x.id)).eq('status','published');if(q.error)throw q.error;subs=q.data||[]}
@@ -28,7 +30,7 @@ export default function MyCourses(){
  return <section><div className="pagehead"><div><p className="eyebrow">MY LEARNING</p><h1>My Courses</h1><p className="muted">तपाईंलाई पहुँच प्रदान गरिएका courses बाट आफ्नो पढाइ सुरु गर्नुहोस्।</p></div></div>
  {loading&&<p role="status">My Courses लोड हुँदैछ…</p>}{error&&<p className="notice" role="alert">{error}</p>}
  {!loading&&!error&&!courses.length&&<div className="card"><h2>अहिलेसम्म कुनै course छैन</h2><p>Course खरिद गरी Admin बाट payment approve भएपछि यहाँ देखिन्छ।</p><Link className="btn" to="/courses">Courses हेर्नुहोस्</Link></div>}
- <div style={{display:'flex',gap:18,overflowX:'auto',padding:'8px 2px 22px',scrollSnapType:'x mandatory'}}>{courses.map((c,i)=><article key={c.id} className="card" style={{flex:'0 0 min(310px,82vw)',scrollSnapAlign:'start',display:'flex',flexDirection:'column',gap:12}}><div className={`course-cover ${i%2?'blue':''}`}><span>MY COURSE</span><BookOpen size={42}/></div><span className="pill">Access Active</span><h2 style={{margin:0}}>{c.title_ne}</h2><p className="muted">{c.title_en||c.description||'लोकसेवा तयारी'}</p><div style={{marginTop:'auto'}}><button className="btn" type="button" onClick={()=>setSelected(x=>x===c.id?'':c.id)} aria-expanded={selected===c.id}>{selected===c.id?'प्रगति बन्द गर्नुहोस्':'अध्ययन प्रगति हेर्नुहोस्'} <ArrowRight size={16}/></button></div></article>)}</div>
+ <div style={{display:'flex',gap:18,overflowX:'auto',padding:'8px 2px 22px',scrollSnapType:'x mandatory'}}>{courses.map((c,i)=><article key={c.id} className="card" style={{flex:'0 0 min(310px,82vw)',scrollSnapAlign:'start',display:'flex',flexDirection:'column',gap:12}}><div className={`course-cover ${i%2?'blue':''}`}><span>MY COURSE</span><BookOpen size={42}/></div><span className="pill">Access Active</span><h2 style={{margin:0}}>{c.title_ne}</h2><p className="muted">{c.title_en||c.description||'लोकसेवा तयारी'}</p><div style={{marginTop:'auto'}}><button className="btn" type="button" onClick={()=>toggleCourse(c.id)} aria-expanded={selected===c.id}>{selected===c.id?'प्रगति बन्द गर्नुहोस्':'अध्ययन प्रगति हेर्नुहोस्'} <ArrowRight size={16}/></button></div></article>)}</div>
  {selected&&<section className="card" style={{marginTop:18}}><h2>अध्ययन प्रगति विवरण</h2><p className="muted">{courses.find(c=>c.id===selected)?.title_ne}</p>
  {unitLoading&&<p role="status">Progress लोड हुँदैछ…</p>}{unitError&&<p className="notice" role="alert">{unitError}</p>}
  {!unitLoading&&!unitError&&!unitRows.length&&<p>यस course मा प्रकाशित Units अझै छैनन्।</p>}
