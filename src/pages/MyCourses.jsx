@@ -17,7 +17,7 @@ export default function MyCourses(){
  useEffect(()=>{const courseId=searchParams.get('course')||'';setSelected(current=>current===courseId?current:courseId)},[searchParams]);
  function toggleCourse(courseId){const next=selected===courseId?'':courseId;setSelected(next);setSearchParams(next?{course:next}:{})}
  useEffect(()=>{if(!selected){setUnitRows([]);return}let active=true;(async()=>{setUnitLoading(true);setUnitError('');try{
- const u=await supabase.from('learning_units').select('id,code,title_ne,title_en,sort_order').eq('course_id',selected).eq('status','published').order('sort_order');if(u.error)throw u.error;
+ const u=await supabase.from('learning_units').select('id,code,title_ne,title_en,sort_order,quiz_topic_id').eq('course_id',selected).eq('status','published').order('sort_order');if(u.error)throw u.error;
  const units=u.data||[];let subs=[],subsubs=[],materials=[],done=[];
  if(units.length){const q=await supabase.from('learning_sub_units').select('id,unit_id').in('unit_id',units.map(x=>x.id)).eq('status','published');if(q.error)throw q.error;subs=q.data||[]}
  if(subs.length){const q=await supabase.from('learning_sub_sub_units').select('id,sub_unit_id').in('sub_unit_id',subs.map(x=>x.id)).eq('status','published');if(q.error)throw q.error;subsubs=q.data||[]}
@@ -29,20 +29,15 @@ export default function MyCourses(){
  }catch(e){if(active)setUnitError(e.message)}finally{if(active)setUnitLoading(false)}})();return()=>{active=false}},[selected,user?.id]);
  useEffect(()=>{if(!selected||!unitRows.length||!user?.id)return;let active=true;
  (async()=>{try{
- const [cu,ts]=await Promise.all([supabase.from('course_units').select('subject_id,topic_id').eq('course_id',selected).eq('status','published'),supabase.from('topics').select('id,subject_id,code,name_ne,name_en')]);
- if(cu.error||ts.error)throw cu.error||ts.error;
- const normalize=v=>String(v||'').normalize('NFKC').toLowerCase().replace(/^(unit|युनिट)\\s*/i,'').replace(/[\\s.·:_-]+/g,'').trim();
- const pairs=(cu.data||[]).filter(x=>x.topic_id);
- const mapped=unitRows.map(u=>({unit:u,topics:(ts.data||[]).filter(t=>pairs.some(p=>p.topic_id===t.id&&p.subject_id===t.subject_id)&&[u.code,u.title_ne,u.title_en].filter(Boolean).some(v=>[t.code,t.name_ne,t.name_en].filter(Boolean).some(n=>normalize(n)===normalize(v))))}));
  const {data:mine,error:myError}=await supabase.from('practice_attempts').select('topic_id,score,total_questions,correct_answers').eq('course_id',selected).eq('user_id',user.id);
  if(myError)throw myError;
  const stat={};
- for(const entry of mapped){const matches=entry.topics;if(matches.length!==1){stat[entry.unit.id]={unmapped:true};continue}
- const topic=matches[0],own=(mine||[]).filter(x=>x.topic_id===topic.id);
+ for(const u of unitRows){
+ if(!u.quiz_topic_id){stat[u.id]={unmapped:true};continue}
+ const own=(mine||[]).filter(x=>x.topic_id===u.quiz_topic_id);
  const avg=own.length?own.reduce((n,x)=>n+(Number(x.score)||0),0)/own.length:null;
  const percent=own.length?own.reduce((n,x)=>n+(x.total_questions>0?(Number(x.correct_answers)||0)/x.total_questions*100:0),0)/own.length:null;
- // Rank needs access to all participants' attempts. Do not display an invented ranking when RLS restricts rows.
- stat[entry.unit.id]={attempts:own.length,average:avg,percent,rank:null};
+ stat[u.id]={attempts:own.length,average:avg,percent,rank:null};
  }
  if(active)setQuizStats(stat);
  }catch(e){if(active)setQuizStats({})}})();return()=>{active=false}
