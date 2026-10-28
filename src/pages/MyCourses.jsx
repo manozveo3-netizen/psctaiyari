@@ -4,7 +4,7 @@ import {BookOpen,ArrowRight} from 'lucide-react';
 import {supabase} from '../lib/supabase';
 import {useAuth} from '../contexts/AuthContext';
 export default function MyCourses(){
- const {user}=useAuth();const [searchParams,setSearchParams]=useSearchParams();const [selected,setSelected]=useState(()=>searchParams.get('course')||''),[unitRows,setUnitRows]=useState([]),[unitLoading,setUnitLoading]=useState(false),[unitError,setUnitError]=useState(''),[courses,setCourses]=useState([]),[loading,setLoading]=useState(true),[error,setError]=useState('');
+ const {user}=useAuth();const [searchParams,setSearchParams]=useSearchParams();const [quizStats,setQuizStats]=useState({});const [selected,setSelected]=useState(()=>searchParams.get('course')||''),[unitRows,setUnitRows]=useState([]),[unitLoading,setUnitLoading]=useState(false),[unitError,setUnitError]=useState(''),[courses,setCourses]=useState([]),[loading,setLoading]=useState(true),[error,setError]=useState('');
  useEffect(()=>{let active=true;(async()=>{setLoading(true);setError('');try{
  const {data:enrollments,error:enrollError}=await supabase.from('course_enrollments').select('course_id,enrolled_at').eq('user_id',user.id).eq('status','active').or('expires_at.is.null,expires_at.gt.'+new Date().toISOString());
  if(enrollError)throw enrollError;
@@ -27,6 +27,27 @@ export default function MyCourses(){
  const rows=units.map(unit=>{const subIds=new Set(subs.filter(s=>s.unit_id===unit.id).map(x=>x.id));const zIds=new Set(subsubs.filter(z=>subIds.has(z.sub_unit_id)).map(x=>x.id));const entries=materials.filter(m=>zIds.has(m.sub_sub_unit_id));const finished=entries.filter(m=>completed.has(m.id)).length;return {...unit,total:entries.length,finished,percent:entries.length?Math.round(100*finished/entries.length):0}});
  if(active)setUnitRows(rows);
  }catch(e){if(active)setUnitError(e.message)}finally{if(active)setUnitLoading(false)}})();return()=>{active=false}},[selected,user?.id]);
+ useEffect(()=>{if(!selected||!unitRows.length||!user?.id)return;let active=true;
+ (async()=>{try{
+ const [cu,ts]=await Promise.all([supabase.from('course_units').select('subject_id,topic_id').eq('course_id',selected).eq('status','published'),supabase.from('topics').select('id,subject_id,code,name_ne,name_en')]);
+ if(cu.error||ts.error)throw cu.error||ts.error;
+ const normalize=v=>String(v||'').normalize('NFKC').toLowerCase().replace(/^(unit|युनिट)\\s*/i,'').replace(/[\\s.·:_-]+/g,'').trim();
+ const pairs=(cu.data||[]).filter(x=>x.topic_id);
+ const mapped=unitRows.map(u=>({unit:u,topics:(ts.data||[]).filter(t=>pairs.some(p=>p.topic_id===t.id&&p.subject_id===t.subject_id)&&[u.code,u.title_ne,u.title_en].filter(Boolean).some(v=>[t.code,t.name_ne,t.name_en].filter(Boolean).some(n=>normalize(n)===normalize(v))))}));
+ const {data:mine,error:myError}=await supabase.from('practice_attempts').select('topic_id,score,total_questions,correct_answers').eq('course_id',selected).eq('user_id',user.id);
+ if(myError)throw myError;
+ const stat={};
+ for(const entry of mapped){const matches=entry.topics;if(matches.length!==1){stat[entry.unit.id]={unmapped:true};continue}
+ const topic=matches[0],own=(mine||[]).filter(x=>x.topic_id===topic.id);
+ const avg=own.length?own.reduce((n,x)=>n+(Number(x.score)||0),0)/own.length:null;
+ const percent=own.length?own.reduce((n,x)=>n+(x.total_questions>0?(Number(x.correct_answers)||0)/x.total_questions*100:0),0)/own.length:null;
+ // Rank needs access to all participants' attempts. Do not display an invented ranking when RLS restricts rows.
+ stat[entry.unit.id]={attempts:own.length,average:avg,percent,rank:null};
+ }
+ if(active)setQuizStats(stat);
+ }catch(e){if(active)setQuizStats({})}})();return()=>{active=false}
+ },[selected,unitRows,user?.id]);
+ const performance=p=>p==null?'Not rated':p>=80?'Excellent':p>=60?'Good':p>=45?'Average':'Weak';
  return <section><div className="pagehead"><div><p className="eyebrow">MY LEARNING</p><h1>My Courses</h1><p className="muted">तपाईंलाई पहुँच प्रदान गरिएका courses बाट आफ्नो पढाइ सुरु गर्नुहोस्।</p></div></div>
  {loading&&<p role="status">My Courses लोड हुँदैछ…</p>}{error&&<p className="notice" role="alert">{error}</p>}
  {!loading&&!error&&!courses.length&&<div className="card"><h2>अहिलेसम्म कुनै course छैन</h2><p>Course खरिद गरी Admin बाट payment approve भएपछि यहाँ देखिन्छ।</p><Link className="btn" to="/courses">Courses हेर्नुहोस्</Link></div>}
@@ -38,6 +59,6 @@ export default function MyCourses(){
  <div style={{display:'flex',justifyContent:'space-between',gap:12,alignItems:'center'}}><strong>{u.code?'Unit '+u.code+' · ':''}{u.title_ne}</strong><strong>{u.percent}% coverage</strong></div>
  <div role="progressbar" aria-valuenow={u.percent} aria-valuemin={0} aria-valuemax={100} aria-label={u.title_ne+' अध्ययन प्रगति'} style={{height:12,borderRadius:12,background:'#e5e7eb',overflow:'hidden',margin:'12px 0'}}><div style={{height:'100%',width:u.percent+'%',background:'#205D4D',borderRadius:12}}/></div>
  <small>{u.finished} / {u.total} प्रकाशित सामग्री पूरा</small>
- <div className="actions" style={{marginTop:12}}><Link className="btn" to={`/my-courses/${selected}?unit=${u.id}`}>Learning</Link><Link className="btn ghost" to={`/quizzes?course=${selected}&unit=${u.id}`}>Practice Quiz</Link></div>
+ <div className="actions" style={{marginTop:12}}><Link className="btn" to={`/my-courses/${selected}?unit=${u.id}`}>Learning</Link><Link className="btn ghost" to={`/quizzes?course=${selected}&unit=${u.id}`}>Practice Quiz</Link>{(()=>{const st=quizStats[u.id];return <span style={{display:'inline-flex',gap:10,flexWrap:'wrap',alignItems:'center',fontSize:13}} aria-label="Practice quiz statistics"><span>Attempts: <b>{st?.unmapped?'—':st?.attempts??'—'}</b></span><span>Average Marks: <b>{st?.average==null?'—':st.average.toFixed(1)}</b></span><span>Rank: <b>—</b></span><span>Level: <b>{performance(st?.percent)}</b></span></span>})()}</div>
  </article>)}</section>}</section>
 }
