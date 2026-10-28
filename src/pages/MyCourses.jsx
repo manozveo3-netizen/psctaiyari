@@ -38,6 +38,6 @@ export default function MyCourses(){
  <div style={{display:'flex',justifyContent:'space-between',gap:12,alignItems:'center'}}><strong>{u.code?'Unit '+u.code+' · ':''}{u.title_ne}</strong><strong>{u.percent}% coverage</strong></div>
  <div role="progressbar" aria-valuenow={u.percent} aria-valuemin={0} aria-valuemax={100} aria-label={u.title_ne+' अध्ययन प्रगति'} style={{height:12,borderRadius:12,background:'#e5e7eb',overflow:'hidden',margin:'12px 0'}}><div style={{height:'100%',width:u.percent+'%',background:'#205D4D',borderRadius:12}}/></div>
  <small>{u.finished} / {u.total} प्रकाशित सामग्री पूरा</small>
- <div className="actions" style={{marginTop:12}}><Link className="btn" to={`/my-courses/${selected}?unit=${u.id}`}>Learning</Link><Link className="btn ghost" to={`/quizzes?course=${selected}`}>Practice Quiz</Link></div>
+ <div className="actions" style={{marginTop:12}}><Link className="btn" to={`/my-courses/${selected}?unit=${u.id}`}>Learning</Link><Link className="btn ghost" to={`/quizzes?course=${selected}&unit=${u.id}`}>Practice Quiz</Link></div>
  </article>)}</section>}</section>
 }
