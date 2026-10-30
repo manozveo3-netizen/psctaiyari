@@ -56,7 +56,7 @@ create index if not exists learning_materials_sub_sub_unit_order on public.learn
 
 -- Private bucket: students receive short-lived signed URLs only after the RLS checks below.
 insert into storage.buckets (id,name,public,file_size_limit,allowed_mime_types)
-values ('course-materials','course-materials',false,26214400,array['application/pdf','application/vnd.openxmlformats-officedocument.wordprocessingml.document','image/jpeg','image/png','image/webp'])
+values ('course-materials','course-materials',false,26214400,array['application/pdf','application/msword','application/vnd.openxmlformats-officedocument.wordprocessingml.document','image/jpeg','image/png','image/webp'])
 on conflict (id) do update set public=false, file_size_limit=26214400;
 
 grant select,insert,update,delete on public.learning_units,public.learning_sub_units,public.learning_sub_sub_units,public.learning_materials to authenticated;
