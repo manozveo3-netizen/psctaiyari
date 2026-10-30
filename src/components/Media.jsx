@@ -6,8 +6,6 @@ export function Resource({resource,onPosition,onComplete,resume=0}){
  const kind=resource.material_type||resource.kind;
  useEffect(()=>{let active=true;setUrl('');setDocxHtml('');setError('');let timer;
  async function load(){try{
-  // Rich text is stored directly in the database, so it has no Storage bucket/path.
-  // Avoid calling Supabase Storage with null values.
   if(kind==='rich_text')return;
   if(resource.external_url){if(!resource.external_url.startsWith('https://'))throw Error('Invalid resource URL');if(active)setUrl(resource.external_url);return;}
   if(!resource.storage_bucket||!resource.storage_path)throw Error('सामग्रीको file location उपलब्ध छैन।');

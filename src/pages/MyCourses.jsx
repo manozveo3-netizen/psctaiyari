@@ -1,0 +1,54 @@
+import {useEffect,useState} from 'react';
+import {Link,useSearchParams} from 'react-router-dom';
+import {BookOpen,ArrowRight} from 'lucide-react';
+import {supabase} from '../lib/supabase';
+import {useAuth} from '../contexts/AuthContext';
+export default function MyCourses(){
+ const {user}=useAuth();const [searchParams,setSearchParams]=useSearchParams();const [quizStats,setQuizStats]=useState({});const [selected,setSelected]=useState(()=>searchParams.get('course')||''),[unitRows,setUnitRows]=useState([]),[unitLoading,setUnitLoading]=useState(false),[unitError,setUnitError]=useState(''),[courses,setCourses]=useState([]),[loading,setLoading]=useState(true),[error,setError]=useState('');
+ useEffect(()=>{if(!user?.id){setCourses([]);setLoading(false);return}let active=true;(async()=>{setLoading(true);setError('');try{
+ const {data,error:enrollError}=await supabase.from('course_enrollments').select('course_id,enrolled_at,courses!inner(id,title_ne,title_en,description,course_code,paper,fee_npr)').eq('user_id',user.id).eq('status','active').or('expires_at.is.null,expires_at.gt.'+new Date().toISOString()).eq('courses.status','published');
+ if(enrollError)throw enrollError;
+ const courseRows=[...new Map((data||[]).map(x=>[x.course_id,x.courses]).filter(([,course])=>course)).values()];
+ if(active)setCourses(courseRows);
+ }catch(e){if(active)setError(e.message)}finally{if(active)setLoading(false)}})();return()=>{active=false}},[user?.id]);
+ useEffect(()=>{const courseId=searchParams.get('course')||'';setSelected(current=>current===courseId?current:courseId)},[searchParams]);
+ function toggleCourse(courseId){const next=selected===courseId?'':courseId;setSelected(next);setSearchParams(next?{course:next}:{})}
+ useEffect(()=>{if(!selected){setUnitRows([]);return}let active=true;(async()=>{setUnitLoading(true);setUnitError('');try{
+ const u=await supabase.from('learning_units').select('id,code,title_ne,title_en,sort_order,quiz_topic_id,learning_sub_units(id,learning_sub_sub_units(id,learning_materials(id)))').eq('course_id',selected).eq('status','published').eq('learning_sub_units.status','published').eq('learning_sub_units.learning_sub_sub_units.status','published').eq('learning_sub_units.learning_sub_sub_units.learning_materials.status','published').order('sort_order');if(u.error)throw u.error;
+ const units=u.data||[];const materialIds=units.flatMap(unit=>(unit.learning_sub_units||[]).flatMap(sub=>(sub.learning_sub_sub_units||[]).flatMap(subsub=>(subsub.learning_materials||[]).map(material=>material.id))));
+ let done=[];
+ if(materialIds.length){const q=await supabase.from('student_material_progress').select('material_id').eq('user_id',user.id).in('material_id',materialIds);if(q.error)throw q.error;done=q.data||[]}
+ const completed=new Set(done.map(x=>x.material_id));
+ const rows=units.map(unit=>{const entries=(unit.learning_sub_units||[]).flatMap(sub=>(sub.learning_sub_sub_units||[]).flatMap(subsub=>subsub.learning_materials||[]));const finished=entries.filter(material=>completed.has(material.id)).length;return {...unit,total:entries.length,finished,percent:entries.length?Math.round(100*finished/entries.length):0}});
+ if(active)setUnitRows(rows);
+ }catch(e){if(active)setUnitError(e.message)}finally{if(active)setUnitLoading(false)}})();return()=>{active=false}},[selected,user?.id]);
+ useEffect(()=>{if(!selected||!unitRows.length||!user?.id)return;let active=true;
+ (async()=>{try{
+ const {data:mine,error:myError}=await supabase.from('practice_attempts').select('topic_id,score,total_questions,correct_answers').eq('course_id',selected).eq('user_id',user.id);
+ if(myError)throw myError;
+ const stat={};
+ for(const u of unitRows){
+ if(!u.quiz_topic_id){stat[u.id]={unmapped:true};continue}
+ const own=(mine||[]).filter(x=>x.topic_id===u.quiz_topic_id);
+ const avg=own.length?own.reduce((n,x)=>n+(Number(x.score)||0),0)/own.length:null;
+ const percent=own.length?own.reduce((n,x)=>n+(x.total_questions>0?(Number(x.correct_answers)||0)/x.total_questions*100:0),0)/own.length:null;
+ stat[u.id]={attempts:own.length,average:avg,percent,rank:null};
+ }
+ if(active)setQuizStats(stat);
+ }catch(e){if(active)setQuizStats({})}})();return()=>{active=false}
+ },[selected,unitRows,user?.id]);
+ const performance=p=>p==null?'Not rated':p>=80?'Excellent':p>=60?'Good':p>=45?'Average':'Weak';
+ return <section><div className="pagehead"><div><p className="eyebrow">MY LEARNING</p><h1>My Courses</h1><p className="muted">तपाईंलाई पहुँच प्रदान गरिएका courses बाट आफ्नो पढाइ सुरु गर्नुहोस्।</p></div></div>
+ {loading&&<p role="status">My Courses लोड हुँदैछ…</p>}{error&&<p className="notice" role="alert">{error}</p>}
+ {!loading&&!error&&!courses.length&&<div className="card"><h2>अहिलेसम्म कुनै course छैन</h2><p>Course खरिद गरी Admin बाट payment approve भएपछि यहाँ देखिन्छ।</p><Link className="btn" to="/courses">Courses हेर्नुहोस्</Link></div>}
+ <div style={{display:'flex',gap:18,overflowX:'auto',padding:'8px 2px 22px',scrollSnapType:'x mandatory'}}>{courses.map((c,i)=><article key={c.id} className="card" style={{flex:'0 0 min(310px,82vw)',scrollSnapAlign:'start',display:'flex',flexDirection:'column',gap:12}}><div className={`course-cover ${i%2?'blue':''}`}><span>MY COURSE</span><BookOpen size={42}/></div><span className="pill">Access Active</span><h2 style={{margin:0}}>{c.title_ne}</h2><p className="muted">{c.title_en||c.description||'लोकसेवा तयारी'}</p><div style={{marginTop:'auto'}}><button className="btn" type="button" onClick={()=>toggleCourse(c.id)} aria-expanded={selected===c.id}>{selected===c.id?'प्रगति बन्द गर्नुहोस्':'अध्ययन प्रगति हेर्नुहोस्'} <ArrowRight size={16}/></button></div></article>)}</div>
+ {selected&&<section className="card" style={{marginTop:18}}><h2>अध्ययन प्रगति विवरण</h2><p className="muted">{courses.find(c=>c.id===selected)?.title_ne}</p>
+ {unitLoading&&<p role="status">Progress लोड हुँदैछ…</p>}{unitError&&<p className="notice" role="alert">{unitError}</p>}
+ {!unitLoading&&!unitError&&!unitRows.length&&<p>यस course मा प्रकाशित Units अझै छैनन्।</p>}
+ {unitRows.map(u=><article key={u.id} style={{padding:'16px 0',borderBottom:'1px solid #e5e7eb'}}>
+ <div style={{display:'flex',justifyContent:'space-between',gap:12,alignItems:'center'}}><strong>{u.code?'Unit '+u.code+' · ':''}{u.title_ne}</strong><strong>{u.percent}% coverage</strong></div>
+ <div role="progressbar" aria-valuenow={u.percent} aria-valuemin={0} aria-valuemax={100} aria-label={u.title_ne+' अध्ययन प्रगति'} style={{height:12,borderRadius:12,background:'#e5e7eb',overflow:'hidden',margin:'12px 0'}}><div style={{height:'100%',width:u.percent+'%',background:'#205D4D',borderRadius:12}}/></div>
+ <small>{u.finished} / {u.total} प्रकाशित सामग्री पूरा</small>
+ <div className="actions" style={{marginTop:12}}><Link className="btn" to={`/my-courses/${selected}?unit=${u.id}`}>Learning</Link><Link className="btn ghost" to={`/quizzes?course=${selected}&unit=${u.id}`}>Practice Quiz</Link>{(()=>{const st=quizStats[u.id];return <span style={{display:'inline-flex',gap:10,flexWrap:'wrap',alignItems:'center',fontSize:13}} aria-label="Practice quiz statistics"><span>Attempts: <b>{st?.unmapped?'—':st?.attempts??'—'}</b></span><span>Average Marks: <b>{st?.average==null?'—':st.average.toFixed(1)}</b></span><span>Rank: <b>—</b></span><span>Level: <b>{performance(st?.percent)}</b></span></span>})()}</div>
+ </article>)}</section>}</section>
+}

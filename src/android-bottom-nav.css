@@ -1,0 +1,8 @@
+.android-bottom-nav{display:none}
+@media(max-width:650px){
+  .app-shell .container{padding-bottom:92px}
+  .android-bottom-nav{position:fixed;display:flex;align-items:stretch;justify-content:space-around;bottom:0;left:0;right:0;z-index:12;background:rgba(255,255,255,.98);border-top:1px solid var(--line);padding:7px max(8px,env(safe-area-inset-right)) calc(7px + env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left));box-shadow:0 -6px 20px rgba(24,54,48,.08)}
+  .android-bottom-nav a{display:flex;flex:1;min-height:48px;gap:3px;align-items:center;justify-content:center;flex-direction:column;color:#718176;font-size:9px;font-weight:700;border-radius:9px;white-space:nowrap}
+  .android-bottom-nav a.active{color:#164034;background:#eaf2ec}
+  .android-bottom-nav svg{stroke-width:2.3}
+}
