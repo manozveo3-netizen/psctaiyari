@@ -2,7 +2,7 @@ import {useEffect,useState} from 'react';
 import {Link,NavLink,Outlet,useLocation} from 'react-router-dom';
 import {useAuth} from '../contexts/AuthContext';
 import {BookOpen,Home,LogOut,Shield,BarChart3,Clock,Menu,X} from 'lucide-react';
-const links=[['/my-courses',BookOpen,'My Courses'],['/courses',BookOpen,'Courses'],['/tests',Clock,'Mock Test'],['/progress',BarChart3,'मेरो प्रगति']];
+const links=[['/my-courses',BookOpen,'My Courses'],['/courses',BookOpen,'Courses'],['/tests',Clock,'Mock Test'],['/progress',BarChart3,'Summary']];
 export default function Layout(){
  const {user,profile,signOut}=useAuth();const location=useLocation();const [menuOpen,setMenuOpen]=useState(false);
  useEffect(()=>setMenuOpen(false),[location.pathname,location.search]);
