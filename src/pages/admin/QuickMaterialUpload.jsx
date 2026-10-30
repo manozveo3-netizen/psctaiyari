@@ -11,14 +11,29 @@ const materialType=file=>{
 const safeName=name=>name.replace(/[^a-zA-Z0-9._-]/g,'_');
 
 export default function QuickMaterialUpload(){
- const [courses,setCourses]=useState([]),[units,setUnits]=useState([]);
+ const [courses,setCourses]=useState([]),[units,setUnits]=useState([]),[materials,setMaterials]=useState([]);
  const [courseId,setCourseId]=useState(''),[unitId,setUnitId]=useState('');
  const [topic,setTopic]=useState(''),[file,setFile]=useState(null);
  const [busy,setBusy]=useState(false),[message,setMessage]=useState(''),[error,setError]=useState('');
 
  useEffect(()=>{let active=true;(async()=>{const {data,error}=await supabase.from('courses').select('id,title_ne,title_en,course_code').eq('status','published').order('title_ne');if(error)throw error;if(active)setCourses(data||[]);})().catch(e=>active&&setError(e.message));return()=>{active=false};},[]);
 
- useEffect(()=>{setUnitId('');setUnits([]);if(!courseId)return;let active=true;(async()=>{const {data,error}=await supabase.from('learning_units').select('id,code,title_ne,title_en,status,sort_order').eq('course_id',courseId).order('sort_order');if(error)throw error;if(active)setUnits(data||[]);})().catch(e=>active&&setError(e.message));return()=>{active=false};},[courseId]);
+ useEffect(()=>{setUnitId('');setUnits([]);setMaterials([]);if(!courseId)return;let active=true;(async()=>{const {data,error}=await supabase.from('learning_units').select('id,code,title_ne,title_en,status,sort_order').eq('course_id',courseId).order('sort_order');if(error)throw error;if(active)setUnits(data||[]);})().catch(e=>active&&setError(e.message));return()=>{active=false};},[courseId]);
+
+ async function loadMaterials(){
+  if(!unitId){setMaterials([]);return;}
+  const {data:subs,error:subError}=await supabase.from('learning_sub_units').select('id').eq('unit_id',unitId);
+  if(subError)throw subError;
+  const subIds=(subs||[]).map(x=>x.id);if(!subIds.length){setMaterials([]);return;}
+  const {data:topics,error:topicError}=await supabase.from('learning_sub_sub_units').select('id,title_ne').in('sub_unit_id',subIds).order('sort_order');
+  if(topicError)throw topicError;
+  const topicIds=(topics||[]).map(x=>x.id);if(!topicIds.length){setMaterials([]);return;}
+  const {data,error}=await supabase.from('learning_materials').select('id,title_ne,material_type,status,created_at,sub_sub_unit_id').in('sub_sub_unit_id',topicIds).order('created_at',{ascending:true});
+  if(error)throw error;
+  const topicNames=Object.fromEntries((topics||[]).map(x=>[x.id,x.title_ne]));
+  setMaterials((data||[]).map(x=>({...x,topic_name:topicNames[x.sub_sub_unit_id]||x.title_ne})));
+ }
+ useEffect(()=>{loadMaterials().catch(e=>setError(e.message));},[unitId]);
 
  async function ensureTopicPath(){
   let {data:sub,error}=await supabase.from('learning_sub_units').select('id').eq('unit_id',unitId).eq('code','materials').limit(1).maybeSingle();
@@ -44,6 +59,7 @@ export default function QuickMaterialUpload(){
    const {error:saveError}=await supabase.from('learning_materials').insert({sub_sub_unit_id:subSubUnitId,title_ne:topic.trim(),title_en:topic.trim(),material_type:ext,storage_bucket:'course-materials',storage_path:path,sort_order:999,status:'published'});
    if(saveError)throw saveError;
    setTopic('');setFile(null);
+   await loadMaterials();
    const input=document.getElementById('quick-material-file');if(input)input.value='';
    setMessage('Learning material सुरक्षित र प्रकाशित भयो।');
   }catch(err){
@@ -64,5 +80,6 @@ export default function QuickMaterialUpload(){
    <label>File (PDF, JPG/JPEG, DOC/DOCX)<input id="quick-material-file" required type="file" accept={ACCEPT} onChange={e=>setFile(e.target.files?.[0]||null)} />{file&&<small>{file.name} · {(file.size/1048576).toFixed(2)} MB</small>}</label>
    <div className="span2"><button className="btn" disabled={busy||!courses.length}>{busy?'Uploading…':'Save Learning Material'}</button></div>
   </form>
+  {unitId&&<section className="card"><h2>यस Unit मा upload भएका Learning Materials</h2>{materials.length?<div className="course-tree">{materials.map(item=><div className="tree-row" key={item.id}><span className="grow"><strong>{item.topic_name}</strong><small>{item.material_type?.toUpperCase()} · {item.status} · {new Date(item.created_at).toLocaleDateString()}</small></span></div>)}</div>:<p className="muted">यो Unit मा अझै Learning Material upload भएको छैन।</p>}</section>}
  </section>;
 }
