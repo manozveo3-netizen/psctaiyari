@@ -5,26 +5,21 @@ import {supabase} from '../lib/supabase';
 import {useAuth} from '../contexts/AuthContext';
 export default function MyCourses(){
  const {user}=useAuth();const [searchParams,setSearchParams]=useSearchParams();const [quizStats,setQuizStats]=useState({});const [selected,setSelected]=useState(()=>searchParams.get('course')||''),[unitRows,setUnitRows]=useState([]),[unitLoading,setUnitLoading]=useState(false),[unitError,setUnitError]=useState(''),[courses,setCourses]=useState([]),[loading,setLoading]=useState(true),[error,setError]=useState('');
- useEffect(()=>{let active=true;(async()=>{setLoading(true);setError('');try{
- const {data:enrollments,error:enrollError}=await supabase.from('course_enrollments').select('course_id,enrolled_at').eq('user_id',user.id).eq('status','active').or('expires_at.is.null,expires_at.gt.'+new Date().toISOString());
+ useEffect(()=>{if(!user?.id){setCourses([]);setLoading(false);return}let active=true;(async()=>{setLoading(true);setError('');try{
+ const {data,error:enrollError}=await supabase.from('course_enrollments').select('course_id,enrolled_at,courses!inner(id,title_ne,title_en,description,course_code,paper,fee_npr)').eq('user_id',user.id).eq('status','active').or('expires_at.is.null,expires_at.gt.'+new Date().toISOString()).eq('courses.status','published');
  if(enrollError)throw enrollError;
- if(!enrollments?.length){if(active)setCourses([]);return}
- const ids=[...new Set(enrollments.map(e=>e.course_id))];
- const {data,error}=await supabase.from('courses').select('id,title_ne,title_en,description,course_code,paper,fee_npr').in('id',ids).eq('status','published');
- if(error)throw error;
- if(active)setCourses(data||[]);
+ const courseRows=[...new Map((data||[]).map(x=>[x.course_id,x.courses]).filter(([,course])=>course)).values()];
+ if(active)setCourses(courseRows);
  }catch(e){if(active)setError(e.message)}finally{if(active)setLoading(false)}})();return()=>{active=false}},[user?.id]);
  useEffect(()=>{const courseId=searchParams.get('course')||'';setSelected(current=>current===courseId?current:courseId)},[searchParams]);
  function toggleCourse(courseId){const next=selected===courseId?'':courseId;setSelected(next);setSearchParams(next?{course:next}:{})}
  useEffect(()=>{if(!selected){setUnitRows([]);return}let active=true;(async()=>{setUnitLoading(true);setUnitError('');try{
- const u=await supabase.from('learning_units').select('id,code,title_ne,title_en,sort_order,quiz_topic_id').eq('course_id',selected).eq('status','published').order('sort_order');if(u.error)throw u.error;
- const units=u.data||[];let subs=[],subsubs=[],materials=[],done=[];
- if(units.length){const q=await supabase.from('learning_sub_units').select('id,unit_id').in('unit_id',units.map(x=>x.id)).eq('status','published');if(q.error)throw q.error;subs=q.data||[]}
- if(subs.length){const q=await supabase.from('learning_sub_sub_units').select('id,sub_unit_id').in('sub_unit_id',subs.map(x=>x.id)).eq('status','published');if(q.error)throw q.error;subsubs=q.data||[]}
- if(subsubs.length){const q=await supabase.from('learning_materials').select('id,sub_sub_unit_id').in('sub_sub_unit_id',subsubs.map(x=>x.id)).eq('status','published');if(q.error)throw q.error;materials=q.data||[]}
- if(materials.length){const q=await supabase.from('student_material_progress').select('material_id').eq('user_id',user.id).in('material_id',materials.map(x=>x.id));if(q.error)throw q.error;done=q.data||[]}
+ const u=await supabase.from('learning_units').select('id,code,title_ne,title_en,sort_order,quiz_topic_id,learning_sub_units(id,learning_sub_sub_units(id,learning_materials(id)))').eq('course_id',selected).eq('status','published').eq('learning_sub_units.status','published').eq('learning_sub_units.learning_sub_sub_units.status','published').eq('learning_sub_units.learning_sub_sub_units.learning_materials.status','published').order('sort_order');if(u.error)throw u.error;
+ const units=u.data||[];const materialIds=units.flatMap(unit=>(unit.learning_sub_units||[]).flatMap(sub=>(sub.learning_sub_sub_units||[]).flatMap(subsub=>(subsub.learning_materials||[]).map(material=>material.id))));
+ let done=[];
+ if(materialIds.length){const q=await supabase.from('student_material_progress').select('material_id').eq('user_id',user.id).in('material_id',materialIds);if(q.error)throw q.error;done=q.data||[]}
  const completed=new Set(done.map(x=>x.material_id));
- const rows=units.map(unit=>{const subIds=new Set(subs.filter(s=>s.unit_id===unit.id).map(x=>x.id));const zIds=new Set(subsubs.filter(z=>subIds.has(z.sub_unit_id)).map(x=>x.id));const entries=materials.filter(m=>zIds.has(m.sub_sub_unit_id));const finished=entries.filter(m=>completed.has(m.id)).length;return {...unit,total:entries.length,finished,percent:entries.length?Math.round(100*finished/entries.length):0}});
+ const rows=units.map(unit=>{const entries=(unit.learning_sub_units||[]).flatMap(sub=>(sub.learning_sub_sub_units||[]).flatMap(subsub=>subsub.learning_materials||[]));const finished=entries.filter(material=>completed.has(material.id)).length;return {...unit,total:entries.length,finished,percent:entries.length?Math.round(100*finished/entries.length):0}});
  if(active)setUnitRows(rows);
  }catch(e){if(active)setUnitError(e.message)}finally{if(active)setUnitLoading(false)}})();return()=>{active=false}},[selected,user?.id]);
  useEffect(()=>{if(!selected||!unitRows.length||!user?.id)return;let active=true;
