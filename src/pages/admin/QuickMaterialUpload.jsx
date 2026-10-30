@@ -28,7 +28,7 @@ export default function QuickMaterialUpload(){
   const {data:topics,error:topicError}=await supabase.from('learning_sub_sub_units').select('id,title_ne').in('sub_unit_id',subIds).order('sort_order');
   if(topicError)throw topicError;
   const topicIds=(topics||[]).map(x=>x.id);if(!topicIds.length){setMaterials([]);return;}
-  const {data,error}=await supabase.from('learning_materials').select('id,title_ne,material_type,status,created_at,sub_sub_unit_id').in('sub_sub_unit_id',topicIds).order('created_at',{ascending:true});
+  const {data,error}=await supabase.from('learning_materials').select('id,title_ne,material_type,status,created_at,sub_sub_unit_id,storage_bucket,storage_path').in('sub_sub_unit_id',topicIds).order('created_at',{ascending:true});
   if(error)throw error;
   const topicNames=Object.fromEntries((topics||[]).map(x=>[x.id,x.title_ne]));
   setMaterials((data||[]).map(x=>({...x,topic_name:topicNames[x.sub_sub_unit_id]||x.title_ne})));
@@ -68,6 +68,16 @@ export default function QuickMaterialUpload(){
   }finally{setBusy(false);}
  }
 
+ async function removeMaterial(item){
+  if(!confirm('“'+item.title_ne+'” हटाउने? Upload भएको file पनि स्थायी रूपमा हट्छ।'))return;
+  setBusy(true);setError('');setMessage('');
+  try{
+   if(item.storage_bucket&&item.storage_path){const {error:storageError}=await supabase.storage.from(item.storage_bucket).remove([item.storage_path]);if(storageError)throw storageError;}
+   const {error:deleteError}=await supabase.from('learning_materials').delete().eq('id',item.id);if(deleteError)throw deleteError;
+   await loadMaterials();setMessage('Learning material हटाइयो।');
+  }catch(e){setError(e.message||'Learning material हटाउन सकेन।');}finally{setBusy(false);}
+ }
+
  return <section className="learning-admin">
   <div className="learning-admin-intro"><div><p className="eyebrow">QUICK UPLOAD</p><h2>Learning Material</h2><p className="muted">Published course छान्नुहोस्, त्यसको Unit छान्नुहोस्, Topic लेख्नुहोस् र file upload गर्नुहोस्।</p></div></div>
   {message&&<p className="success" role="status">{message}</p>}
@@ -80,6 +90,6 @@ export default function QuickMaterialUpload(){
    <label>File (PDF, JPG/JPEG, DOC/DOCX)<input id="quick-material-file" required type="file" accept={ACCEPT} onChange={e=>setFile(e.target.files?.[0]||null)} />{file&&<small>{file.name} · {(file.size/1048576).toFixed(2)} MB</small>}</label>
    <div className="span2"><button className="btn" disabled={busy||!courses.length}>{busy?'Uploading…':'Save Learning Material'}</button></div>
   </form>
-  {unitId&&<section className="card"><h2>यस Unit मा upload भएका Learning Materials</h2>{materials.length?<div className="course-tree">{materials.map(item=><div className="tree-row" key={item.id}><span className="grow"><strong>{item.topic_name}</strong><small>{item.material_type?.toUpperCase()} · {item.status} · {new Date(item.created_at).toLocaleDateString()}</small></span></div>)}</div>:<p className="muted">यो Unit मा अझै Learning Material upload भएको छैन।</p>}</section>}
+  {unitId&&<section className="card"><h2>यस Unit मा upload भएका Learning Materials</h2>{materials.length?<div className="course-tree">{materials.map(item=><div className="tree-row" key={item.id}><span className="grow"><strong>{item.topic_name}</strong><small>{item.material_type?.toUpperCase()} · {item.status} · {new Date(item.created_at).toLocaleDateString()}</small></span><button type="button" className="danger" disabled={busy} onClick={()=>removeMaterial(item)}>Delete</button></div>)}</div>:<p className="muted">यो Unit मा अझै Learning Material upload भएको छैन।</p>}</section>}
  </section>;
 }
