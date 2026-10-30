@@ -9,16 +9,32 @@ const materialType=file=>{
  return 'docx';
 };
 const safeName=name=>name.replace(/[^a-zA-Z0-9._-]/g,'_');
+const filename=path=>(path||'').split('/').pop()?.replace(/^[a-z0-9-]+-/i,'')||'File';
 
 export default function QuickMaterialUpload(){
- const [courses,setCourses]=useState([]),[units,setUnits]=useState([]);
+ const [courses,setCourses]=useState([]),[units,setUnits]=useState([]),[materials,setMaterials]=useState([]);
  const [courseId,setCourseId]=useState(''),[unitId,setUnitId]=useState('');
  const [topic,setTopic]=useState(''),[file,setFile]=useState(null);
  const [busy,setBusy]=useState(false),[message,setMessage]=useState(''),[error,setError]=useState('');
 
  useEffect(()=>{let active=true;(async()=>{const {data,error}=await supabase.from('courses').select('id,title_ne,title_en,course_code').eq('status','published').order('title_ne');if(error)throw error;if(active)setCourses(data||[]);})().catch(e=>active&&setError(e.message));return()=>{active=false};},[]);
 
- useEffect(()=>{setUnitId('');setUnits([]);if(!courseId)return;let active=true;(async()=>{const {data,error}=await supabase.from('learning_units').select('id,code,title_ne,title_en,status,sort_order').eq('course_id',courseId).order('sort_order');if(error)throw error;if(active)setUnits(data||[]);})().catch(e=>active&&setError(e.message));return()=>{active=false};},[courseId]);
+ useEffect(()=>{setUnitId('');setUnits([]);setMaterials([]);if(!courseId)return;let active=true;(async()=>{const {data,error}=await supabase.from('learning_units').select('id,code,title_ne,title_en,status,sort_order').eq('course_id',courseId).order('sort_order');if(error)throw error;if(active)setUnits(data||[]);})().catch(e=>active&&setError(e.message));return()=>{active=false};},[courseId]);
+
+ async function loadMaterials(){
+  if(!unitId){setMaterials([]);return;}
+  const {data:subs,error:subError}=await supabase.from('learning_sub_units').select('id').eq('unit_id',unitId);
+  if(subError)throw subError;
+  const subIds=(subs||[]).map(x=>x.id);if(!subIds.length){setMaterials([]);return;}
+  const {data:topics,error:topicError}=await supabase.from('learning_sub_sub_units').select('id,title_ne').in('sub_unit_id',subIds).order('sort_order');
+  if(topicError)throw topicError;
+  const ids=(topics||[]).map(x=>x.id);if(!ids.length){setMaterials([]);return;}
+  const {data,error}=await supabase.from('learning_materials').select('*').in('sub_sub_unit_id',ids).order('created_at',{ascending:true});
+  if(error)throw error;
+  const names=Object.fromEntries((topics||[]).map(x=>[x.id,x.title_ne]));
+  setMaterials((data||[]).map(x=>({...x,topic_name:names[x.sub_sub_unit_id]||x.title_ne})));
+ }
+ useEffect(()=>{loadMaterials().catch(e=>setError(e.message));},[unitId]);
 
  async function ensureTopicPath(){
   let {data:sub,error}=await supabase.from('learning_sub_units').select('id').eq('unit_id',unitId).eq('code','materials').limit(1).maybeSingle();
@@ -45,15 +61,26 @@ export default function QuickMaterialUpload(){
    if(saveError)throw saveError;
    setTopic('');setFile(null);
    const input=document.getElementById('quick-material-file');if(input)input.value='';
-   setMessage('Learning material सुरक्षित र प्रकाशित भयो।');
+   await loadMaterials();
+   setMessage('Learning material सुरक्षित र प्रकाशित भयो। पुरानो file overwrite भएको छैन।');
   }catch(err){
    if(uploaded)await supabase.storage.from('course-materials').remove([uploaded]);
    setError(err.message||'सामग्री सुरक्षित हुन सकेन।');
   }finally{setBusy(false);}
  }
+ async function removeMaterial(material){
+  if(!confirm('“'+filename(material.storage_path)+'” हटाउने? यो फिर्ता गर्न मिल्दैन।'))return;
+  setBusy(true);setError('');setMessage('');
+  try{
+   if(material.storage_bucket&&material.storage_path){const r=await supabase.storage.from(material.storage_bucket).remove([material.storage_path]);if(r.error)throw r.error;}
+   const {error}=await supabase.from('learning_materials').delete().eq('id',material.id);if(error)throw error;
+   await loadMaterials();setMessage('Learning material हटाइयो।');
+  }catch(e){setError(e.message||'सामग्री हटाउन सकेन।');}finally{setBusy(false);}
+ }
+ const grouped=materials.reduce((all,item)=>{(all[item.topic_name]??=[]).push(item);return all;},{});
 
  return <section className="learning-admin">
-  <div className="learning-admin-intro"><div><p className="eyebrow">QUICK UPLOAD</p><h2>Learning Material</h2><p className="muted">Published course छान्नुहोस्, त्यसको Unit छान्नुहोस्, Topic लेख्नुहोस् र file upload गर्नुहोस्।</p></div></div>
+  <div className="learning-admin-intro"><div><p className="eyebrow">QUICK UPLOAD</p><h2>Learning Material</h2><p className="muted">Published course छान्नुहोस्, त्यसको Unit छान्नुहोस्, Topic लेख्नुहोस् र file upload गर्नुहोस्। एउटै Topic मा धेरै file राख्न मिल्छ।</p></div></div>
   {message&&<p className="success" role="status">{message}</p>}
   {error&&<p className="notice" role="alert">{error}</p>}
   {!courses.length&&!error&&<p className="card muted">Published course उपलब्ध छैन। पहिले Course मा गएर course publish गर्नुहोस्।</p>}
@@ -64,5 +91,6 @@ export default function QuickMaterialUpload(){
    <label>File (PDF, JPG/JPEG, DOC/DOCX)<input id="quick-material-file" required type="file" accept={ACCEPT} onChange={e=>setFile(e.target.files?.[0]||null)} />{file&&<small>{file.name} · {(file.size/1048576).toFixed(2)} MB</small>}</label>
    <div className="span2"><button className="btn" disabled={busy||!courses.length}>{busy?'Uploading…':'Save Learning Material'}</button></div>
   </form>
+  {unitId&&<section className="card"><h2>यस Unit का Learning Materials</h2>{Object.keys(grouped).length?Object.entries(grouped).map(([topicName,items])=><div className="course-tree" key={topicName}><h3>{topicName}</h3>{items.map(item=><div className="tree-row" key={item.id}><span className="grow"><strong>{filename(item.storage_path)}</strong><small>{item.material_type?.toUpperCase()} · {item.status}</small></span><button type="button" className="danger" disabled={busy} onClick={()=>removeMaterial(item)}>Delete</button></div>)}</div>):<p className="muted">यो Unit मा अझै Learning Material छैन।</p>}</section>}
  </section>;
 }
