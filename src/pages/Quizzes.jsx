@@ -13,10 +13,11 @@ export default function Quizzes(){
  useEffect(()=>{if(!user)return;(async()=>{const {data:e}=await supabase.from('course_enrollments').select('course_id').eq('user_id',user.id).neq('status','cancelled');const ids=[...new Set((e||[]).map(x=>x.course_id))];if(!ids.length)return;const [{data:c},{data:u}]=await Promise.all([supabase.from('courses').select('id,title_ne,title_en').in('id',ids).eq('status','published'),supabase.from('course_units').select('course_id,subject_id,topic_id').in('course_id',ids).eq('status','published')]);const sids=[...new Set((u||[]).map(x=>x.subject_id).filter(Boolean))];const [{data:s},{data:t}]=await Promise.all([supabase.from('subjects').select('*').in('id',sids).eq('active',true),supabase.from('topics').select('*').in('subject_id',sids).eq('active',true)]);setCourses(c||[]);if(searchParams.get('course')&&(c||[]).some(x=>x.id===searchParams.get('course')))setCourseId(searchParams.get('course'));setUnits(u||[]);setSubjects(s||[]);setTopics(t||[])})()},[user]);
  useEffect(()=>{const requestedUnit=searchParams.get('unit'),requestedCourse=searchParams.get('course');if(!requestedUnit||!requestedCourse||!courses.some(c=>c.id===requestedCourse))return;let active=true;
  (async()=>{const {data:learning,error:e}=await supabase.from('learning_units').select('id,quiz_topic_id').eq('id',requestedUnit).eq('course_id',requestedCourse).eq('status','published').maybeSingle();if(!active)return;
- const mapped=topics.find(t=>t.id===learning?.quiz_topic_id);
- if(e||!mapped){setSubjectId('');setTopicId('');setUnitNotice('यो Learning Unit को Quiz Topic mapping गरिएको छैन। Admin बाट Quiz Topic छान्नुहोस्।');return}
+ if(e||!learning?.quiz_topic_id){setSubjectId('');setTopicId('');setUnitNotice('यो Learning Unit को Quiz Topic mapping गरिएको छैन। Admin बाट Quiz Topic छान्नुहोस्।');return}
+ const {data:mapped,error:topicError}=await supabase.from('topics').select('id,subject_id').eq('id',learning.quiz_topic_id).eq('active',true).maybeSingle();if(!active)return;
+ if(topicError||!mapped){setSubjectId('');setTopicId('');setUnitNotice('यो Learning Unit को Quiz Topic mapping गरिएको छैन। Admin बाट Quiz Topic छान्नुहोस्।');return}
  setCourseId(requestedCourse);setSubjectId(mapped.subject_id);setTopicId(mapped.id);setUnitNotice('यस Unit को Quiz Topic चयन भयो।')
- })();return()=>{active=false}},[courses,topics,searchParams]);
+ })();return()=>{active=false}},[courses,searchParams]);
  const unitRequest=Boolean(searchParams.get('unit')&&searchParams.get('course'));
  const unitMapped=!unitRequest||!unitNotice.includes('mapping गरिएको छैन');
  const loadAttempts=async()=>{if(!user)return;const {data,error:e}=await supabase.from('practice_attempts').select('subject_id,total_questions,correct_answers,time_spent_seconds,subjects(name_ne,name_en)').eq('user_id',user.id).order('completed_at',{ascending:false}).limit(100);if(e)setError(e.message);else setAttempts(data||[])};
