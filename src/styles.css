@@ -81,3 +81,8 @@ body{line-height:1.6}h1,h2,h3{line-height:1.5;overflow-wrap:anywhere}h2{font-siz
  .app-shell .sidebar>.eyebrow{display:block;padding:0 12px}
  .app-shell .sidebar .sidebar-note{display:none}
 }
+
+
+/* Image-based aptitude questions */
+.question-media{display:block;max-width:min(100%,640px);max-height:480px;object-fit:contain;margin:16px auto;border:1px solid var(--line);border-radius:10px;background:#fff}
+.option-media{display:block;max-width:220px;max-height:150px;object-fit:contain;margin:8px 0 0 30px}
