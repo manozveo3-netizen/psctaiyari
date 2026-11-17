@@ -90,17 +90,23 @@ def main() -> None:
         api_key=require("CHROMA_API_KEY"), tenant=TENANT, database=DATABASE
     )
     source = chroma.get_collection(SOURCE_COLLECTION, embedding_function=None)
-    audit = source.get(limit=1000, include=["metadatas"])
     topic_fields = ("topic", "topic_name", "subtopic", "category", "section", "unit", "unit_name", "chapter")
     topic_counts = {}
     unclassified = 0
-    for metadata in audit["metadatas"]:
-        metadata = metadata or {}
-        label = next((f"{field}: {metadata[field]}" for field in topic_fields if metadata.get(field) not in (None, "")), None)
-        if label is None:
-            unclassified += 1
-        else:
-            topic_counts[label] = topic_counts.get(label, 0) + 1
+    audit_offset = 0
+    while True:
+        audit = source.get(limit=300, offset=audit_offset, include=["metadatas"])
+        metadata_rows = audit["metadatas"]
+        if not metadata_rows:
+            break
+        for metadata in metadata_rows:
+            metadata = metadata or {}
+            label = next((f"{field}: {metadata[field]}" for field in topic_fields if metadata.get(field) not in (None, "")), None)
+            if label is None:
+                unclassified += 1
+            else:
+                topic_counts[label] = topic_counts.get(label, 0) + 1
+        audit_offset += len(metadata_rows)
     print(json.dumps({"legacy_topic_audit": dict(sorted(topic_counts.items())), "legacy_without_topic_field": unclassified}, ensure_ascii=False))
     target = chroma.get_or_create_collection(
         TARGET_COLLECTION,
