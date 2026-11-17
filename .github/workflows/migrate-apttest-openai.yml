@@ -4,13 +4,13 @@ on:
   workflow_dispatch:
     inputs:
       migrate_existing:
-        description: Re-embed all current aptTest records
+        description: Re-embed all current aptTest records (run once)
         type: boolean
-        default: true
-      upsert_new_chunks:
-        description: Upsert the 20 new visual-MCQ chunks
-        type: boolean
-        default: true
+        default: false
+      new_chunks_storage_path:
+        description: JSON batch path in the private Images bucket
+        type: string
+        required: true
 
 permissions:
   contents: read
@@ -22,7 +22,8 @@ jobs:
     env:
       CHROMA_API_KEY: ${{ secrets.CHROMA_API_KEY }}
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-      RAG_NEW_CHUNKS_JSON: ${{ secrets.RAG_NEW_CHUNKS_JSON }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
     steps:
       - uses: actions/checkout@v4
 
@@ -31,15 +32,12 @@ jobs:
           python-version: "3.12"
 
       - name: Install dependencies
-        run: pip install "chromadb==1.5.9" "openai>=1.0,<3"
+        run: pip install "chromadb==1.5.9" "openai>=1.0,<3" "requests>=2.31,<3"
 
       - name: Migrate and upsert
         run: |
-          ARGS=""
+          ARGS="--new-chunks-storage-path '${{ inputs.new_chunks_storage_path }}'"
           if [ "${{ inputs.migrate_existing }}" = "true" ]; then
             ARGS="$ARGS --migrate-existing"
           fi
-          if [ "${{ inputs.upsert_new_chunks }}" = "true" ]; then
-            ARGS="$ARGS --upsert-new-chunks"
-          fi
-          python scripts/migrate_apttest_to_openai.py $ARGS
+          eval "python scripts/migrate_apttest_to_openai.py $ARGS"
