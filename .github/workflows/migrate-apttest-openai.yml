@@ -36,8 +36,11 @@ jobs:
 
       - name: Migrate and upsert
         run: |
-          ARGS="--new-chunks-storage-path '${{ inputs.new_chunks_storage_path }}'"
           if [ "${{ inputs.migrate_existing }}" = "true" ]; then
-            ARGS="$ARGS --migrate-existing"
+            python scripts/migrate_apttest_to_openai.py \
+              --migrate-existing \
+              --new-chunks-storage-path "${{ inputs.new_chunks_storage_path }}"
+          else
+            python scripts/migrate_apttest_to_openai.py \
+              --new-chunks-storage-path "${{ inputs.new_chunks_storage_path }}"
           fi
-          eval "python scripts/migrate_apttest_to_openai.py $ARGS"
